@@ -114,17 +114,31 @@ class Portfolio:
 
     # Fills in correlation matrix but takes 3 minutes
     def init_correlation(self):
-        for nb, i in enumerate(self.dataframe.index):
+        for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
                 [11], self.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
+            l = []  # np.array(len(correlationResp))
             for j in self.dataframe.index:
-                if correlationResp[str(j)]['11']['type'] == 'double' and self.cov.loc[i, j] is None:
-                    self.cov.loc[i, j] = float(
-                        correlationResp[str(j)]['11']['value'].replace(',', '.'))
-                    self.cov.loc[j, i] = self.cov.loc[i, j]
+                j = str(j)
+                if correlationResp[j]['11']['type'] == 'double':
+                    l.append(float(
+                        correlationResp[j]['11']['value'].replace(',', '.')))
                 else:
-                    self.cov.loc[i, j] = float('nan')
-            print("{} / {}".format(nb, len(self.dataframe.index)))
+                    l.append(float('nan'))
+            self.cov.loc[i] = l
+            self.cov[i] = l
+            """
+            for nbj, j in enumerate(self.dataframe.index):
+                # print(nbi, nbj)
+                j = str(j)
+                if correlationResp[j]['11']['type'] == 'double' and self.cov.at[nbi, nbj] is None:
+                    self.cov.at[nbi, nbj] = float(
+                        correlationResp[j]['11']['value'].replace(',', '.'))
+                    self.cov.at[nbj, nbi] = self.cov.at[nbi, nbj]
+                else:
+                    self.cov.at[nbi, nbj] = float('nan')
+            """
+            print("{} / {}".format(nbi, len(self.dataframe.index)))
         return self.cov
 
     def get_covariance_unused(self, i, j):
@@ -145,7 +159,7 @@ class Portfolio:
             correlation = self.cov.loc[i, j]
         stdDev_i = self.dataframe.loc[i, 'stdDev']
         stdDev_j = self.dataframe.loc[j, 'stdDev']
-        #print((stdDev_i, stdDev_j))
+        # print((stdDev_i, stdDev_j))
         # print(correlation)
         return correlation * stdDev_i * stdDev_j
 
@@ -157,7 +171,7 @@ class Portfolio:
                 wi = self.dataframe.loc[i, 'NAVPercentage']
                 wj = self.dataframe.loc[j, 'NAVPercentage']
                 cov = self.get_covariance(i, j)
-                #print((wi, wj))
+                # print((wi, wj))
                 # print(cov)
                 sum += wi * wj * cov
         return sum
@@ -168,7 +182,7 @@ class Portfolio:
     def get_sharpe(self):
         rendement = self.get_rendement()
         variance = self.get_variance()
-        #print((rendement, np.sqrt(variance)))
+        # print((rendement, np.sqrt(variance)))
         if variance == 0:
             raise RuntimeError('Invalid Variance cannot be zero !')
         return (rendement - 0.0005) / np.sqrt(variance)
@@ -182,5 +196,5 @@ if __name__ == "__main__":
     p = Portfolio(restManager=r)
     print(p.get_sharpe())
     print(p.get_dataframe())
-    #test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
-    #print(test[test.assetType == 'PORTFOLIO'])
+    # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
+    # print(test[test.assetType == 'PORTFOLIO'])
