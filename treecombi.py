@@ -14,12 +14,13 @@ def fake_sharpefunction(elms):
 
 
 class TreeCombi:
-    def __init__(self, port, lr=0.01):
+    def __init__(self, port, nb_assets=4, lr=0.01):  # TODO: change nb_assets to 40
         # Data
         self.port = port
         self.end = len(port)
+        self.nb_assets = nb_assets
         # Iter
-        self.nb_combis = pow(2, self.end) - 1
+        self.nb_combis = pow(2, self.end) - 1  # this is wrong since nb_assets
         self.iter = 0
         self.lr = lr
         # Time
@@ -50,9 +51,15 @@ class TreeCombi:
                 break
         self.port.dataframe.at[self.port.dataframe.index[index],
                                "NAVPercentage"] = navPer
-        print(portSharp)
 
     def __call__(self, start=-1, s=''):
+        """
+        TODO: we should handle index "rotations" in the start == -1 init loop,
+        to have full trees each time but keeping the
+        start > self.nb_assets condition
+        if start > self.nb_assets:  # We do not take more than nb_assets assets
+            return
+        """
         if start != -1:  # Process element at start index
             # str(self.port[start]) + ","  # Just for testing purpose
             s += str(start) + ","
@@ -98,7 +105,7 @@ if __name__ == "__main__":
     print(p.dataframe.columns)
     print(p.dataframe)  # ["sharpe"]
     p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
-    p.init_correlation()
+    print(p.init_correlation())
     t = TreeCombi(p)
     t()
     print(t.port.dataframe)
