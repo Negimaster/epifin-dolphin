@@ -198,7 +198,10 @@ class Portfolio:
         # print((rendement, np.sqrt(variance)))
         if variance == 0:
             raise RuntimeError('Invalid Variance cannot be zero !')
-        return (rendement - 0.0005) / np.sqrt(variance)
+        r = (rendement - 0.0005) / np.sqrt(variance)
+        if math.isnan(r):
+            return float("-inf")
+        return r
 
     def __len__(self):
         return self.dataframe.shape[0]
