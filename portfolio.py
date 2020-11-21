@@ -73,10 +73,12 @@ class Portfolio:
                 self.dataframe['stdDev'], errors='coerce')
 
             self.dataframe['quantity'] = 0
-            self.dataframe['totalValue'] = 0
-            self.dataframe['NAVPercentage'] = 0
+            self.dataframe['totalValue'] = 0.0
+            self.dataframe['NAVPercentage'] = 0.0
         else:
             self.dataframe = dataframe.copy()
+        self.dataframe = self.dataframe.astype(
+            {'totalValue': 'float64', 'NAVPercentage': 'float64'})
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
@@ -114,7 +116,7 @@ class Portfolio:
     def init_correlation(self):
         for nb, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
-                [11], b.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
+                [11], self.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
             for j in self.dataframe.index:
                 if correlationResp[str(j)]['11']['type'] == 'double' and self.cov.loc[i, j] is None:
                     self.cov.loc[i, j] = float(
@@ -143,8 +145,8 @@ class Portfolio:
             correlation = self.cov.loc[i, j]
         stdDev_i = self.dataframe.loc[i, 'stdDev']
         stdDev_j = self.dataframe.loc[j, 'stdDev']
-        print((stdDev_i, stdDev_j))
-        print(correlation)
+        #print((stdDev_i, stdDev_j))
+        # print(correlation)
         return correlation * stdDev_i * stdDev_j
 
     # Compute sharpe of portfolio
@@ -155,8 +157,8 @@ class Portfolio:
                 wi = self.dataframe.loc[i, 'NAVPercentage']
                 wj = self.dataframe.loc[j, 'NAVPercentage']
                 cov = self.get_covariance(i, j)
-                print((wi, wj))
-                print(cov)
+                #print((wi, wj))
+                # print(cov)
                 sum += wi * wj * cov
         return sum
 
@@ -166,10 +168,13 @@ class Portfolio:
     def get_sharpe(self):
         rendement = self.get_rendement()
         variance = self.get_variance()
-        print((rendement, np.sqrt(variance)))
+        #print((rendement, np.sqrt(variance)))
         if variance == 0:
-            return 'error'
+            raise RuntimeError('Invalid Variance cannot be zero !')
         return (rendement - 0.0005) / np.sqrt(variance)
+
+    def __len__(self):
+        return self.dataframe.shape[0]
 
 
 if __name__ == "__main__":

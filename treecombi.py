@@ -1,18 +1,23 @@
 from string import ascii_uppercase as ASCIIUP
 import time
+import os
 import random
+import pandas as pd
 import numpy as np
+from network import RestManager
+from portfolio import Portfolio
 
-
+"""
 def fake_sharpefunction(elms):
     return -np.std(elms)
+"""
 
 
 class TreeCombi:
-    def __init__(self, elems, lr=0.01):
+    def __init__(self, port, lr=0.01):
         # Data
-        self.elems = elems
-        self.end = len(elems)
+        self.port = port
+        self.end = len(port)
         # Iter
         self.nb_combis = pow(2, self.end) - 1
         self.iter = 0
@@ -26,24 +31,30 @@ class TreeCombi:
 
     def __process(self, index):
         # FIXME: compute sharpe for port
-        portSharp = fake_sharpefunction(self.elems)
+        # get_sharpe(self.port)
+        portSharp = self.port.get_sharpe()  # fake_sharpefunction(self.port)
         portSharp_1 = portSharp
         while True:
             # save navPer and portSharp
-            navPer = self.elems[index]
+            navPer = self.port.dataframe.at[self.port.dataframe.index[index],
+                                            "NAVPercentage"]
             portSharp = portSharp_1
             # update df navPer according to learning rate self.lr
-            self.elems[index] += self.lr
+            # self.port[index] += self.lr
+            self.port.dataframe.at[self.port.dataframe.index[index],
+                                   "NAVPercentage"] = navPer + self.lr
             # compute new portShrap
-            portSharp_1 = fake_sharpefunction(self.elems)
+            # fake_sharpefunction(self.port)
+            portSharp_1 = self.port.get_sharpe()
             if portSharp_1 <= portSharp:
                 break
-        self.elems[index] = navPer
+        self.port.dataframe.at[self.port.dataframe.index[index],
+                               "NAVPercentage"] = navPer
         print(portSharp)
 
     def __call__(self, start=-1, s=''):
         if start != -1:  # Process element at start index
-            # str(self.elems[start]) + ","  # Just for testing purpose
+            # str(self.port[start]) + ","  # Just for testing purpose
             s += str(start) + ","
             self.iter += 1
             ti = time.time()  # took: Current iteration time
@@ -51,7 +62,7 @@ class TreeCombi:
             # Processing
             # time.sleep(0.1 + random.random() / 2)  # Process element...
             self.__process(start)
-            print(s, " - ", self.elems)
+            print(s, " - ", self.port.get_sharpe())
 
             # Time & ouptut
             self.t1 = time.time()
@@ -66,8 +77,28 @@ class TreeCombi:
 
 
 if __name__ == "__main__":
+    """
     X = np.array(list(range(4))).astype("float")
     print(X)
     #t = TreeCombi(list(ASCIIUP)[:4])
     t = TreeCombi(X)
     t()
+    """
+    r = RestManager()
+    if os.path.isfile("save20bestsharpe.csv"):
+        df = pd.read_csv("save20bestsharpe.csv", index_col=0)
+        df = df.astype({"totalValue": "float64", "NAVPercentage": "float64"})
+        p = Portfolio(dataframe=df, restManager=r)
+    else:
+        p = Portfolio(restManager=r)
+        df = p.dataframe.copy().sort_values(
+            by=['sharpe'], ascending=False)[:20]
+        p = Portfolio(dataframe=df, restManager=r)
+        p.dataframe.to_csv("save20bestsharpe.csv")  # , index=False)
+    print(p.dataframe.columns)
+    print(p.dataframe)  # ["sharpe"]
+    p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
+    t = TreeCombi(p)
+    t()
+    print(t.port.dataframe)
+    print(t.port.get_sharpe())
