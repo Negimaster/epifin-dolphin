@@ -62,7 +62,7 @@ class TreeCombi:
             navPer = self.port.dataframe.at[self.port.dataframe.index[index],
                                             "NAVPercentage"]
             portSharp = portSharp_1
-            if math.isnan(portSharp):
+            if math.isnan(portSharp):  # portSharp = float("-inf")
                 raise RuntimeError(f"portSharp: {portSharp} is NAN !")
             # update df navPer according to learning rate self.lr
             # self.port[index] += self.lr
@@ -118,8 +118,8 @@ class TreeCombi:
             self.elp = self.t1 - self.t0  # cur_tm: total elapsed time
             # est_tm: total estimated time
             self.est = (self.elp / self.iter) * self.nb_combis
-            print(f"iter {self.iter}/{self.nb_combis}: took: {self.t1 - ti: .1f}, cur_tm: {self.elp: .1f}, est_tm: {self.est: .1f}, left_tm: {self.est - self.elp: .1f}")
-            if math.fabs(self.bestsharpe - portsharpe) >= self.min_sharpe_change:
+            print(f"iter {self.iter}/{self.nb_combis}: took: {self.t1 - ti: .1f}, cur_tm: {self.elp: .1f}, est_tm: {self.est: .1f}, left_tm: {self.est - self.elp: .1f}, bestsharpe:{self.bestsharpe}")
+            if portsharpe > self.bestsharpe + self.min_sharpe_change:
                 for i in range(start + 1, self.end):
                     port = self.port.dataframe["NAVPercentage"].copy()
                     self(i, nb_assets=nb_assets, s=s)
