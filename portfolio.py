@@ -8,7 +8,7 @@ from network import RestManager
 
 class Portfolio:
 
-    def __init__(self, dataframe=None, restManager=RestManager(),
+    def __init__(self, path=None, dataframe=None, restManager=RestManager(),
                  START_DATE=None, END_DATE=None):
         self.r = restManager
         if not isinstance(self.r, RestManager):
@@ -18,66 +18,70 @@ class Portfolio:
             self.START_DATE = datetime(2016, 6, 1).isoformat('T')
         if END_DATE is None:
             self.END_DATE = datetime(2020, 9, 30).isoformat('T')
-        if dataframe is None:
-            pars = self.r.getAssetList(self.START_DATE)
-            company_id_array = []
-            company_name_array = []
-            asset_currency_array = []
-            asset_type_array = []
-            asset_value_array = []
-
-            for asset in pars:
-                company_id_array.append(
-                    int(asset['ASSET_DATABASE_ID']['value']))
-                company_name_array.append(asset['LABEL']['value'])
-                asset_currency_array.append(asset['CURRENCY']['value'])
-                asset_type_array.append(asset['TYPE']['value'])
-                asset_value_array.append(asset['LAST_CLOSE_VALUE_IN_CURR']['value'].split()[0].replace(
-                    ',', '.')) if 'LAST_CLOSE_VALUE_IN_CURR' in asset else asset_value_array.append('error')
-
-            self.dataframe = pd.DataFrame(index=company_id_array)
-            self.dataframe['assetName'] = company_name_array
-            self.dataframe['assetCurrency'] = asset_currency_array
-            self.dataframe['assetType'] = asset_type_array
-            self.dataframe['assetValue'] = asset_value_array
-            self.dataframe['assetValue'] = pd.to_numeric(
-                self.dataframe['assetValue'], errors='coerce')
-
-            resp = self.r.putRatio([13, 12, 10, 9], company_id_array,
-                                   None, self.START_DATE, self.END_DATE, 'yearly')
-
-            self.dataframe['ROI'] = None
-            self.dataframe['annualROI'] = None
-            self.dataframe['sharpe'] = None
-            self.dataframe['stdDev'] = None
-
-            for i in company_id_array:
-                if i == 2201:
-                    print((resp[str(i)]['12']['value']).replace(',', '.'))
-                self.dataframe.loc[i, 'ROI'] = (
-                    resp[str(i)]['13']['value']).replace(',', '.')
-                self.dataframe.loc[i, 'annualROI'] = (
-                    resp[str(i)]['9']['value']).replace(',', '.')
-                self.dataframe.loc[i, 'sharpe'] = (
-                    resp[str(i)]['12']['value']).replace(',', '.')
-                self.dataframe.loc[i, 'stdDev'] = (
-                    resp[str(i)]['10']['value']).replace(',', '.')
-                self.dataframe.loc[i, 'ROIType'] = (resp[str(i)]['13']['type'])
-
-            self.dataframe['ROI'] = pd.to_numeric(
-                self.dataframe['ROI'], errors='coerce')
-            self.dataframe['annualROI'] = pd.to_numeric(
-                self.dataframe['annualROI'], errors='coerce')
-            self.dataframe['sharpe'] = pd.to_numeric(
-                self.dataframe['sharpe'], errors='coerce')
-            self.dataframe['stdDev'] = pd.to_numeric(
-                self.dataframe['stdDev'], errors='coerce')
-
-            self.dataframe['quantity'] = 0
-            self.dataframe['totalValue'] = 0.0
-            self.dataframe['NAVPercentage'] = 0.0
+        if path is not None and os.path.isfile(path):
+            self.load_portfolio(path)
         else:
-            self.dataframe = dataframe.copy()
+            if dataframe is None:
+                pars = self.r.getAssetList(self.START_DATE)
+                company_id_array = []
+                company_name_array = []
+                asset_currency_array = []
+                asset_type_array = []
+                asset_value_array = []
+
+                for asset in pars:
+                    company_id_array.append(
+                        int(asset['ASSET_DATABASE_ID']['value']))
+                    company_name_array.append(asset['LABEL']['value'])
+                    asset_currency_array.append(asset['CURRENCY']['value'])
+                    asset_type_array.append(asset['TYPE']['value'])
+                    asset_value_array.append(asset['LAST_CLOSE_VALUE_IN_CURR']['value'].split()[0].replace(
+                        ',', '.')) if 'LAST_CLOSE_VALUE_IN_CURR' in asset else asset_value_array.append('error')
+
+                self.dataframe = pd.DataFrame(index=company_id_array)
+                self.dataframe['assetName'] = company_name_array
+                self.dataframe['assetCurrency'] = asset_currency_array
+                self.dataframe['assetType'] = asset_type_array
+                self.dataframe['assetValue'] = asset_value_array
+                self.dataframe['assetValue'] = pd.to_numeric(
+                    self.dataframe['assetValue'], errors='coerce')
+
+                resp = self.r.putRatio([13, 12, 10, 9], company_id_array,
+                                       None, self.START_DATE, self.END_DATE, 'yearly')
+
+                self.dataframe['ROI'] = None
+                self.dataframe['annualROI'] = None
+                self.dataframe['sharpe'] = None
+                self.dataframe['stdDev'] = None
+
+                for i in company_id_array:
+                    if i == 2201:
+                        print((resp[str(i)]['12']['value']).replace(',', '.'))
+                    self.dataframe.loc[i, 'ROI'] = (
+                        resp[str(i)]['13']['value']).replace(',', '.')
+                    self.dataframe.loc[i, 'annualROI'] = (
+                        resp[str(i)]['9']['value']).replace(',', '.')
+                    self.dataframe.loc[i, 'sharpe'] = (
+                        resp[str(i)]['12']['value']).replace(',', '.')
+                    self.dataframe.loc[i, 'stdDev'] = (
+                        resp[str(i)]['10']['value']).replace(',', '.')
+                    self.dataframe.loc[i, 'ROIType'] = (
+                        resp[str(i)]['13']['type'])
+
+                self.dataframe['ROI'] = pd.to_numeric(
+                    self.dataframe['ROI'], errors='coerce')
+                self.dataframe['annualROI'] = pd.to_numeric(
+                    self.dataframe['annualROI'], errors='coerce')
+                self.dataframe['sharpe'] = pd.to_numeric(
+                    self.dataframe['sharpe'], errors='coerce')
+                self.dataframe['stdDev'] = pd.to_numeric(
+                    self.dataframe['stdDev'], errors='coerce')
+
+                self.dataframe['quantity'] = 0
+                self.dataframe['totalValue'] = 0.0
+                self.dataframe['NAVPercentage'] = 0.0
+            else:
+                self.dataframe = dataframe.copy()
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64'})
 
@@ -116,14 +120,7 @@ class Portfolio:
     # Fills in correlation matrix but takes 3 minutes
     def init_correlation(self):
         if os.path.isfile("cov.npy"):
-            self.load_cov()
-            self.cov = pd.DataFrame(
-                self.cov, index=self.dataframe.index[:self.cov.shape[0]])
-            self.cov = self.cov.rename(
-                columns={n: newname for n, newname in enumerate(self.dataframe.index[:self.cov.shape[0]])})
-            print(self.cov)
-            assert(not self.cov.isnull().values.any())
-            return self.cov
+            return self.load_cov()
         for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
                 [11], self.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
@@ -137,10 +134,10 @@ class Portfolio:
                     l.append(float("nan"))
             self.cov.loc[i] = l
             self.cov[i] = l
-            print(f"{nbi} / {len(self.dataframe.index)}", end="\r")
+            print(
+                f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
         # print(self.cov)
         toremove = self.cov.isnull().all(axis=1)
-        # print(toremove)
         toremove = [i for i in toremove.index if toremove.loc[i]]
         self.dataframe.drop(toremove, inplace=True)
         self.cov.dropna(axis=0, how="all", inplace=True)
@@ -204,13 +201,26 @@ class Portfolio:
     def __len__(self):
         return self.dataframe.shape[0]
 
+    def load_cov(self, file="cov.npy"):
+        self.cov = np.load(file)
+        self.cov = pd.DataFrame(self.cov, index=self.dataframe.index)
+        self.cov = self.cov.rename(
+            columns={n: newname for n, newname in enumerate(self.dataframe.index)})
+        assert(not self.cov.isnull().values.any())
+        return self.cov
+
     def dump_cov(self, file="cov.npy"):
         # assert(self.cov.iat[0, 0]
         #       is not None and not math.isnan(self.cov.at[0, 0]))
         np.save(file, np.array(self.cov))
 
-    def load_cov(self, file="cov.npy"):
-        self.cov = np.load(file)
+    def load_portfolio(self, file="full.csv"):
+        self.dataframe = pd.read_csv("full.csv", index_col=0)
+        self.dataframe = self.dataframe.astype(
+            {"totalValue": "float64", "NAVPercentage": "float64"})
+
+    def dump_portfolio(self, file="full.csv"):
+        self.dataframe.to_csv()
 
 
 if __name__ == "__main__":

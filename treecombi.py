@@ -26,7 +26,7 @@ def get_combis(elems):  # elems = deque(elems)
 
 class TreeCombi:
     # TODO: change nb_assets to 40
-    def __init__(self, port, min_assets=2, max_assets=4, lr=0.01):
+    def __init__(self, port, min_assets=15, max_assets=40, lr=0.01):
         # Data
         self.port = port
         self.end = len(port)
@@ -125,27 +125,16 @@ class TreeCombi:
 
 
 if __name__ == "__main__":
-    """
-    X = np.array(list(range(4))).astype("float")
-    print(X)
-    #t = TreeCombi(list(ASCIIUP)[:4])
-    t = TreeCombi(X)
-    t()
-    """
     r = RestManager()
-    """
-    if os.path.isfile("save20bestsharpe.csv"):
-        df = pd.read_csv("save20bestsharpe.csv", index_col=0)
-        df = df.astype({"totalValue": "float64", "NAVPercentage": "float64"})
-        p = Portfolio(dataframe=df, restManager=r)
+    # """
+    if os.path.isfile("full.csv"):
+        p = Portfolio(path="full.csv", restManager=r)
     else:
         p = Portfolio(restManager=r)
         df = p.dataframe.copy().sort_values(
             by=['sharpe'], ascending=False)  # [:5]
         p = Portfolio(dataframe=df, restManager=r)
-        p.dataframe.to_csv("save20bestsharpe.csv")  # , index=False)
-    """
-    p = Portfolio(restManager=r)
+        p.dump_portfolio()
     print(p.dataframe.columns)
     print(p.dataframe)  # ["sharpe"]
     # p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
