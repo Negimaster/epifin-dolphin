@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import os
 from datetime import datetime
 from network import RestManager
 
@@ -114,6 +115,12 @@ class Portfolio:
 
     # Fills in correlation matrix but takes 3 minutes
     def init_correlation(self):
+        if os.path.isfile("cov.npy"):
+            self.load_cov()
+            self.cov = pd.DataFrame(self.cov, index=self.dataframe.index)
+            self.cov = self.cov.rename(
+                columns={n: newname for n, newname in enumerate(self.dataframe.index)})
+            return self.cov
         for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
                 [11], self.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
@@ -139,6 +146,8 @@ class Portfolio:
                     self.cov.at[nbi, nbj] = float('nan')
             """
             print("{} / {}".format(nbi, len(self.dataframe.index)))
+        if not os.path.isfile("cov.npy"):
+            self.dump_cov()
         return self.cov
 
     def get_covariance_unused(self, i, j):
@@ -146,6 +155,7 @@ class Portfolio:
 
     def get_covariance(self, i, j):
         if self.cov.loc[i, j] is None or math.isnan(self.cov.loc[i, j]):
+            raise RuntimeError(f"Should be init at : {i},{j}")
             correlationResp = self.r.putRatio(
                 [11], [i], j, self.START_DATE, self.END_DATE, "yearly")
             if correlationResp[str(i)]['11']['type'] == 'double':
@@ -191,6 +201,14 @@ class Portfolio:
 
     def __len__(self):
         return self.dataframe.shape[0]
+
+    def dump_cov(self, file="cov.npy"):
+        # assert(self.cov.iat[0, 0]
+        #       is not None and not math.isnan(self.cov.at[0, 0]))
+        np.save(file, np.array(self.cov))
+
+    def load_cov(self, file="cov.npy"):
+        self.cov = np.load(file)
 
 
 if __name__ == "__main__":

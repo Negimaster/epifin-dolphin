@@ -37,7 +37,8 @@ class TreeCombi:
         self.bestcompo = ""
         self.bestsharpe = 0.0
         # Iter
-        self.nb_combis = pow(2, self.end) - 1  # this is wrong since min_assets
+        # self.nb_combis = pow(2, self.end) - 1  # this is wrong since min_assets
+        self.nb_combis = (pow(2, self.max_assets) - 1) * self.end
         self.iter = 0
         self.lr = lr
         # Time
@@ -146,6 +147,9 @@ if __name__ == "__main__":
     print(p.dataframe)  # ["sharpe"]
     # p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
     print(p.init_correlation())
+    if input("Launch ?") != "y":
+        exit(0)
+    p.dump_cov()
     t = TreeCombi(p)
     t()
     print(t.port.dataframe)
