@@ -98,6 +98,7 @@ if __name__ == "__main__":
     print(p.dataframe.columns)
     print(p.dataframe)  # ["sharpe"]
     p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
+    p.init_correlation()
     t = TreeCombi(p)
     t()
     print(t.port.dataframe)
