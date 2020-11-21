@@ -174,6 +174,8 @@ class Portfolio:
                 # print((wi, wj))
                 # print(cov)
                 sum += wi * wj * cov
+        if sum == 0:
+            return float("inf")
         return sum
 
     def get_rendement(self):
