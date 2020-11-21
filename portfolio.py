@@ -224,11 +224,23 @@ class Portfolio:
     def dump_portfolio(self, file="full.csv"):
         self.dataframe.to_csv()
 
+    def is_valid(self):
+        nb_different_assets = (self.dataframe['quantity'] != 0).sum()
+        valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
+        
+        stock_navs= self.dataframe[(self.dataframe['quantity'] != 0) & (self.dataframe['assetType'] == 'STOCK')]['NAVPercentage']
+        at_least_half_actions = stock_navs.sum() >= 0.5
+        
+        non_zero_navs = self.dataframe[self.dataframe['quantity'] != 0]['NAVPercentage']
+        valid_navs = ((non_zero_navs >= 1.0) & (non_zero_navs <= 10.0)).all()
+        return valid_nb_different_assets and at_least_half_actions and valid_navs
+
 
 if __name__ == "__main__":
     r = RestManager()
     p = Portfolio(restManager=r)
     print(p.get_sharpe())
     print(p.get_dataframe())
+    print(p.is_valid())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])
