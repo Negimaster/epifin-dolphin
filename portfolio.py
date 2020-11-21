@@ -120,6 +120,7 @@ class Portfolio:
             self.cov = pd.DataFrame(self.cov, index=self.dataframe.index)
             self.cov = self.cov.rename(
                 columns={n: newname for n, newname in enumerate(self.dataframe.index)})
+            assert(not self.cov.isnull().values.any())
             return self.cov
         for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
@@ -131,7 +132,8 @@ class Portfolio:
                     l.append(float(
                         correlationResp[j]['11']['value'].replace(',', '.')))
                 else:
-                    l.append(float('nan'))
+                    raise RuntimeError(
+                        f"got NaN value !, {correlationResp[j]['11']}")
             self.cov.loc[i] = l
             self.cov[i] = l
             """
@@ -146,6 +148,7 @@ class Portfolio:
                     self.cov.at[nbi, nbj] = float('nan')
             """
             print("{} / {}".format(nbi, len(self.dataframe.index)))
+        assert(not self.cov.isnull().values.any())
         if not os.path.isfile("cov.npy"):
             self.dump_cov()
         return self.cov
