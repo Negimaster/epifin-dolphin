@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import os
+import warnings
 from datetime import datetime
 from network import RestManager
 
@@ -184,6 +185,7 @@ class Portfolio:
                 # print(cov)
                 sum += wi * wj * cov
         if sum == 0:
+            warnings.warn("Invalid variance is 0 !")
             return float("inf")
         return sum
 

@@ -2,6 +2,7 @@ from string import ascii_uppercase as ASCIIUP
 import time
 import os
 import random
+import math
 import pandas as pd
 import numpy as np
 from copy import deepcopy as dc
@@ -26,7 +27,8 @@ def get_combis(elems):  # elems = deque(elems)
 
 class TreeCombi:
     # TODO: change nb_assets to 40
-    def __init__(self, port, min_assets=15, max_assets=40, lr=0.01):
+    def __init__(self, port, min_assets=15, max_assets=40,
+                 lr=0.01, min_sharpe_change=0.05):
         # Data
         self.port = port
         self.end = len(port)
@@ -38,9 +40,11 @@ class TreeCombi:
         self.bestsharpe = 0.0
         # Iter
         # self.nb_combis = pow(2, self.end) - 1  # this is wrong since min_assets
+        # Following is also wrong since min_sharpe_change
         self.nb_combis = (pow(2, self.max_assets) - 1) * self.end
         self.iter = 0
         self.lr = lr
+        self.min_sharpe_change = min_sharpe_change
         # Time
         self.t0 = time.time()
         self.t1 = time.time()
@@ -58,11 +62,13 @@ class TreeCombi:
             navPer = self.port.dataframe.at[self.port.dataframe.index[index],
                                             "NAVPercentage"]
             portSharp = portSharp_1
+            if math.isnan(portSharp):
+                raise RuntimeError(f"portSharp: {portSharp} is NAN !")
             # update df navPer according to learning rate self.lr
             # self.port[index] += self.lr
             if self.port.dataframe.at[self.port.dataframe.index[index],
                                       "NAVPercentage"] + self.lr >= 0.1:
-                return
+                return portSharp
             self.port.dataframe.at[self.port.dataframe.index[index],
                                    "NAVPercentage"] = navPer + self.lr
             # compute new portShrap
@@ -72,6 +78,7 @@ class TreeCombi:
                 break
         self.port.dataframe.at[self.port.dataframe.index[index],
                                "NAVPercentage"] = navPer
+        return portSharp
 
     def __checkbetter(self, s, portsharpe):
         if portsharpe > self.bestsharpe:
@@ -99,10 +106,10 @@ class TreeCombi:
 
             # Processing
             # time.sleep(0.1 + random.random() / 2)  # Process element...
-            self.__process(self.c[start])
+            portsharpe = self.__process(self.c[start])
             print(self.c[start])
             if nb_assets >= self.min_assets and nb_assets <= self.max_assets:
-                portsharpe = self.port.get_sharpe()
+                assert(portsharpe == self.port.get_sharpe())
                 self.__checkbetter(s, portsharpe)
                 print(s, " - ", portsharpe)
 
@@ -112,10 +119,11 @@ class TreeCombi:
             # est_tm: total estimated time
             self.est = (self.elp / self.iter) * self.nb_combis
             print(f"iter {self.iter}/{self.nb_combis}: took: {self.t1 - ti: .1f}, cur_tm: {self.elp: .1f}, est_tm: {self.est: .1f}, left_tm: {self.est - self.elp: .1f}")
-            for i in range(start + 1, self.end):
-                port = self.port.dataframe["NAVPercentage"].copy()
-                self(i, nb_assets=nb_assets, s=s)
-                self.port.dataframe["NAVPercentage"] = port
+            if math.fabs(self.bestsharpe - portsharpe) >= self.min_sharpe_change:
+                for i in range(start + 1, self.end):
+                    port = self.port.dataframe["NAVPercentage"].copy()
+                    self(i, nb_assets=nb_assets, s=s)
+                    self.port.dataframe["NAVPercentage"] = port
         else:
             self.t0 = time.time()
             elems = dc(self.elems)
