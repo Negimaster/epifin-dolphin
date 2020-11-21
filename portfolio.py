@@ -117,9 +117,11 @@ class Portfolio:
     def init_correlation(self):
         if os.path.isfile("cov.npy"):
             self.load_cov()
-            self.cov = pd.DataFrame(self.cov, index=self.dataframe.index)
+            self.cov = pd.DataFrame(
+                self.cov, index=self.dataframe.index[:self.cov.shape[0]])
             self.cov = self.cov.rename(
-                columns={n: newname for n, newname in enumerate(self.dataframe.index)})
+                columns={n: newname for n, newname in enumerate(self.dataframe.index[:self.cov.shape[0]])})
+            print(self.cov)
             assert(not self.cov.isnull().values.any())
             return self.cov
         for nbi, i in enumerate(self.dataframe.index):
@@ -132,22 +134,19 @@ class Portfolio:
                     l.append(float(
                         correlationResp[j]['11']['value'].replace(',', '.')))
                 else:
-                    raise RuntimeError(
-                        f"got NaN value !, {correlationResp[j]['11']}")
+                    l.append(float("nan"))
             self.cov.loc[i] = l
             self.cov[i] = l
-            """
-            for nbj, j in enumerate(self.dataframe.index):
-                # print(nbi, nbj)
-                j = str(j)
-                if correlationResp[j]['11']['type'] == 'double' and self.cov.at[nbi, nbj] is None:
-                    self.cov.at[nbi, nbj] = float(
-                        correlationResp[j]['11']['value'].replace(',', '.'))
-                    self.cov.at[nbj, nbi] = self.cov.at[nbi, nbj]
-                else:
-                    self.cov.at[nbi, nbj] = float('nan')
-            """
-            print("{} / {}".format(nbi, len(self.dataframe.index)))
+            print(f"{nbi} / {len(self.dataframe.index)}", end="\r")
+        # print(self.cov)
+        toremove = self.cov.isnull().all(axis=1)
+        # print(toremove)
+        toremove = [i for i in toremove.index if toremove.loc[i]]
+        self.dataframe.drop(toremove, inplace=True)
+        self.cov.dropna(axis=0, how="all", inplace=True)
+        self.cov.dropna(axis=1, how="all", inplace=True)
+        # print(self.cov)
+        # print(self.dataframe)
         assert(not self.cov.isnull().values.any())
         if not os.path.isfile("cov.npy"):
             self.dump_cov()

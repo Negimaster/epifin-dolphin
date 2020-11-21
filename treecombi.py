@@ -133,6 +133,7 @@ if __name__ == "__main__":
     t()
     """
     r = RestManager()
+    """
     if os.path.isfile("save20bestsharpe.csv"):
         df = pd.read_csv("save20bestsharpe.csv", index_col=0)
         df = df.astype({"totalValue": "float64", "NAVPercentage": "float64"})
@@ -143,6 +144,8 @@ if __name__ == "__main__":
             by=['sharpe'], ascending=False)  # [:5]
         p = Portfolio(dataframe=df, restManager=r)
         p.dataframe.to_csv("save20bestsharpe.csv")  # , index=False)
+    """
+    p = Portfolio(restManager=r)
     print(p.dataframe.columns)
     print(p.dataframe)  # ["sharpe"]
     # p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
