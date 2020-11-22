@@ -235,7 +235,7 @@ class Portfolio:
         at_least_half_actions = stock_navs.sum() >= 0.5
         
         non_zero_navs = self.dataframe[self.dataframe['NAVPercentage'] != 0]['NAVPercentage']
-        valid_navs = ((non_zero_navs >= 1.0) & (non_zero_navs <= 10.0)).all()
+        valid_navs = ((non_zero_navs >= 0.01) & (non_zero_navs <= 0.10)).all()
         return valid_nb_different_assets and at_least_half_actions and valid_navs
 
 
