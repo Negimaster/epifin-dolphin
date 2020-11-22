@@ -137,7 +137,8 @@ class TreeCombi:
         nb_asset = self.min_assets
         self.port.dataframe['NAVPercentage'] = 0.0
         for index in best_stock_sharpes.index[:nb_asset]:
-            self.port.dataframe[index, 'NAVPercentage'] = 1.0 / nb_asset
+            default_value = 1.0 / nb_asset
+            self.port.dataframe.at[index, 'NAVPercentage'] = default_value
         # for index in best_stock_sharpes.index[nb_asset:]:
         #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
 
@@ -154,21 +155,21 @@ class TreeCombi:
             source = reducable_percantages.index.sample(1)
             dest = growable_percentages.index.sample(1)
 
-            percentages[source, 'NAVPercentage'] -= percent_transfer
-            percentages[dest, 'NAVPercentage'] += percent_transfer
+            percentages.at[source, 'NAVPercentage'] -= percent_transfer
+            percentages.at[dest, 'NAVPercentage'] += percent_transfer
 
             if (not(self.port.is_valid())):
                 # Rollback
-                percentages[source, 'NAVPercentage'] += percent_transfer
-                percentages[dest, 'NAVPercentage'] -= percent_transfer
+                percentages.at[source, 'NAVPercentage'] += percent_transfer
+                percentages.at[dest, 'NAVPercentage'] -= percent_transfer
             else:
                 new_sharpe = self.port.get_sharpe()
                 if new_sharpe > current_sharpe:
                     current_sharpe = new_sharpe
                 else:
                     # Rollback
-                    percentages[source, 'NAVPercentage'] += percent_transfer
-                    percentages[dest, 'NAVPercentage'] -= percent_transfer
+                    percentages.at[source, 'NAVPercentage'] += percent_transfer
+                    percentages.at[dest, 'NAVPercentage'] -= percent_transfer
 
             percent_transfer *= alpha
 
@@ -198,7 +199,8 @@ if __name__ == "__main__":
     p.dump_cov()
     t = TreeCombi(p)
     # t()
-    t.markov()
+    # t.markov()
     t.set_default_valid_navs()
-    print(t.port.dataframe)
-    print(t.port.get_sharpe())
+    t.port.is_valid()
+    #print(t.port.dataframe)
+    #print(t.port.get_sharpe())

@@ -228,14 +228,15 @@ class Portfolio:
         self.dataframe.to_csv()
 
     def is_valid(self):
-        nb_different_assets = (self.dataframe['NAVPercentage'] != 0).sum()
+        nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
 
         print(f'valid_nb_different_assets: {valid_nb_different_assets}')
 
         stock_navs = self.dataframe[(self.dataframe['NAVPercentage'] != 0.0) & (
             self.dataframe['assetType'] == 'STOCK')]['NAVPercentage']
-        at_least_half_actions = stock_navs.sum() >= 0.5
+        sum_stock_navs = stock_navs.sum()
+        at_least_half_actions = sum_stock_navs >= 0.5
 
         print(f'at_least_half_actions: {at_least_half_actions}')
 
