@@ -225,7 +225,7 @@ class Portfolio:
             {"totalValue": "float64", "NAVPercentage": "float64"})
 
     def dump_portfolio(self, file="full.csv"):
-        self.dataframe.to_csv()
+        self.dataframe.to_csv(file)
 
     def is_valid(self):
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
