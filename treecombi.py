@@ -184,16 +184,17 @@ if __name__ == "__main__":
     # """
     if os.path.isfile("full.csv"):
         p = Portfolio(path="full.csv", restManager=r)
+        print(p.init_correlation())
     else:
         p = Portfolio(restManager=r)
         df = p.dataframe.copy().sort_values(
             by=['sharpe'], ascending=False)  # [:5]
         p = Portfolio(dataframe=df, restManager=r)
+        print(p.init_correlation())
         p.dump_portfolio()
     print(p.dataframe.columns)
     print(p.dataframe)  # ["sharpe"]
     # p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
-    print(p.init_correlation())
     if input("Launch ?") != "y":
         exit(0)
     p.dump_cov()
@@ -202,5 +203,5 @@ if __name__ == "__main__":
     # t.markov()
     t.set_default_valid_navs()
     t.port.is_valid()
-    #print(t.port.dataframe)
-    #print(t.port.get_sharpe())
+    # print(t.port.dataframe)
+    # print(t.port.get_sharpe())

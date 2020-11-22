@@ -225,6 +225,9 @@ class Portfolio:
             {"totalValue": "float64", "NAVPercentage": "float64"})
 
     def dump_portfolio(self, file="full.csv"):
+        """
+        note: always call init_correlation before dump_portfolio
+        """
         self.dataframe.to_csv(file)
 
     def is_valid(self):
