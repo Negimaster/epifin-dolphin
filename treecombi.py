@@ -130,7 +130,48 @@ class TreeCombi:
             for c in get_combis(elems):
                 self.c = c  # Our elems rotation
                 self(0, nb_assets=nb_assets, s=s)
+    
+    def set_default_valid_navs(self):
+        best_stock_sharpes = self.port.dataframe[self.port.dataframe['assetType'] == 'STOCK']['sharpe'].copy().sort_values(by=['sharpe'], ascending=False)
+        nb_asset = self.min_assets
+        for index in best_stock_sharpes.index[:nb_asset]:
+            self.port.dataframe[index, 'NAVPercentage'] = 1.0 / nb_asset
+        for index in best_stock_sharpes.index[nb_asset:]:
+            self.port.dataframe[index, 'NAVPercentage'] = 0.0
 
+    def _markov(self, max_iter, percent_transfer, alpha):
+        percentages = self.port.dataframe['NAVPercentage']
+        min_nav_percentage = 0.01
+        max_nav_percentage = 0.1
+        current_sharpe = self.port.get_sharpe()
+        for iteration in range(max_iter):
+            reducable_percentages = percentages[percentages >= (min_nav_percentage + percent_transfer)]
+            growable_percentages = percentages[percentages <= (max_nav_percentage - perccent_transfer)]
+            source = reducable_percantages.index.sample(1)
+            dest = growable_percentages.index.sample(1)
+
+            percentages[source, 'NAVPercentage'] -= percent_transfer
+            percentages[dest, 'NAVPercentage'] += percent_transfer
+
+            if (not(self.port.is_valid())):
+                # Rollback
+                percentages[source, 'NAVPercentage'] += percent_transfer
+                percentages[dest, 'NAVPercentage'] -= percent_transfer
+            else:
+                new_sharpe = self.port.get_sharpe()
+                if new_sharpe > current_sharpe:
+                    current_sharpe = new_sharpe
+                else:
+                    # Rollback
+                    percentages[source, 'NAVPercentage'] += percent_transfer
+                    percentages[dest, 'NAVPercentage'] -= percent_transfer
+
+            percent_transfer *= alpha
+
+    def markov(self, max_iter=1000, percent_transfer=0.02, alpha=1.0):
+        self.set_default_valid_navs()
+        assert(self.port.is_valid())
+        self._markov(max_iter, percent_transfer, alpha)
 
 if __name__ == "__main__":
     r = RestManager()
@@ -151,6 +192,8 @@ if __name__ == "__main__":
         exit(0)
     p.dump_cov()
     t = TreeCombi(p)
-    t()
+    # t()
+    # t.markov()
+    t.set_default_valid_navs()
     print(t.port.dataframe)
     print(t.port.get_sharpe())
