@@ -148,28 +148,28 @@ class TreeCombi:
         max_nav_percentage = 0.1
         current_sharpe = self.port.get_sharpe()
         for iteration in range(max_iter):
-            reducable_percentages = percentages[percentages >= (
+            reduceable_percentages = percentages[percentages >= (
                 min_nav_percentage + percent_transfer)]
             growable_percentages = percentages[percentages <= (
-                max_nav_percentage - perccent_transfer)]
-            source = reducable_percantages.index.sample(1)
-            dest = growable_percentages.index.sample(1)
+                max_nav_percentage - percent_transfer)]
+            source = reduceable_percentages.index[random.randrange(len(reduceable_percentages))]
+            dest = growable_percentages.index[random.randrange(len(growable_percentages))]
 
-            percentages.at[source, 'NAVPercentage'] -= percent_transfer
-            percentages.at[dest, 'NAVPercentage'] += percent_transfer
+            percentages.at[source] -= percent_transfer
+            percentages.at[dest] += percent_transfer
 
             if (not(self.port.is_valid())):
                 # Rollback
-                percentages.at[source, 'NAVPercentage'] += percent_transfer
-                percentages.at[dest, 'NAVPercentage'] -= percent_transfer
+                percentages.at[source] += percent_transfer
+                percentages.at[dest] -= percent_transfer
             else:
                 new_sharpe = self.port.get_sharpe()
                 if new_sharpe > current_sharpe:
                     current_sharpe = new_sharpe
                 else:
                     # Rollback
-                    percentages.at[source, 'NAVPercentage'] += percent_transfer
-                    percentages.at[dest, 'NAVPercentage'] -= percent_transfer
+                    percentages.at[source] += percent_transfer
+                    percentages.at[dest] -= percent_transfer
 
             percent_transfer *= alpha
 
@@ -200,8 +200,6 @@ if __name__ == "__main__":
     p.dump_cov()
     t = TreeCombi(p)
     # t()
-    # t.markov()
-    t.set_default_valid_navs()
-    t.port.is_valid()
+    t.markov()
     # print(t.port.dataframe)
-    # print(t.port.get_sharpe())
+    print(t.port.get_sharpe())
