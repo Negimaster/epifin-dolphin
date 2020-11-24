@@ -183,7 +183,8 @@ class Portfolio:
                 cov = self.get_covariance(i, j)
                 # print((wi, wj))
                 # print(cov)
-                sum += wi * wj * cov
+                to_add = wi * wj * cov
+                sum += to_add
         if sum == 0:
             warnings.warn("Invalid variance is 0 !")
             return float("inf")
@@ -199,6 +200,8 @@ class Portfolio:
         if variance == 0:
             raise RuntimeError('Invalid Variance cannot be zero !')
         r = (rendement - 0.0005) / np.sqrt(variance)
+        #if (math.isnan(variance) or variance <= 0.0):
+        #    print(variance)
         if math.isnan(r):
             return float("-inf")
         return r
@@ -234,20 +237,20 @@ class Portfolio:
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
 
-        print(f'valid_nb_different_assets: {valid_nb_different_assets}')
+        #print(f'valid_nb_different_assets: {valid_nb_different_assets}')
 
         stock_navs = self.dataframe[(self.dataframe['NAVPercentage'] != 0.0) & (
             self.dataframe['assetType'] == 'STOCK')]['NAVPercentage']
         sum_stock_navs = stock_navs.sum()
         at_least_half_actions = sum_stock_navs >= 0.5
 
-        print(f'at_least_half_actions: {at_least_half_actions}')
+        #print(f'at_least_half_actions: {at_least_half_actions}')
 
         non_zero_navs = self.dataframe[self.dataframe['NAVPercentage']
                                        != 0]['NAVPercentage']
         valid_navs = ((non_zero_navs >= 0.01) & (non_zero_navs <= 0.10)).all()
 
-        print(f'valid_navs: {valid_navs}')
+        #print(f'valid_navs: {valid_navs}')
         return valid_nb_different_assets and at_least_half_actions and valid_navs
 
 

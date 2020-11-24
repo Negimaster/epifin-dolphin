@@ -134,49 +134,78 @@ class TreeCombi:
     def set_default_valid_navs(self):
         best_stock_sharpes = self.port.dataframe[self.port.dataframe['assetType'] == 'STOCK']['sharpe'].copy(
         ).sort_values(ascending=False)  # by=['sharpe'],
-        nb_asset = self.min_assets
+        nb_asset = self.max_assets
         self.port.dataframe['NAVPercentage'] = 0.0
+        default_value = 1.0 / nb_asset
         for index in best_stock_sharpes.index[:nb_asset]:
-            default_value = 1.0 / nb_asset
             self.port.dataframe.at[index, 'NAVPercentage'] = default_value
         # for index in best_stock_sharpes.index[nb_asset:]:
         #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
 
-    def _markov(self, max_iter, percent_transfer, percent_transfer_decay):
+    def _markov(self, max_iter, percent_transfer, percent_transfer_decay, exploration_decay):
         percentages = self.port.dataframe['NAVPercentage']
         min_nav_percentage = 0.01
         max_nav_percentage = 0.1
         current_sharpe = self.port.get_sharpe()
+        exploration_proba = exploration_decay
+
         for iteration in range(max_iter):
-            reduceable_percentages = percentages[percentages >= (
-                min_nav_percentage + percent_transfer)]
-            growable_percentages = percentages[percentages <= (
-                max_nav_percentage - percent_transfer)]
-            source = reduceable_percentages.index[random.randrange(len(reduceable_percentages))]
-            dest = growable_percentages.index[random.randrange(len(growable_percentages))]
 
-            percentages.at[source] -= percent_transfer
-            percentages.at[dest] += percent_transfer
+            if random.random() < exploration_proba:
+                non_zero_percentages = percentages[percentages > 0.0]
+                zero_percentages = percentages[percentages == 0.0]
 
-            if (not(self.port.is_valid())):
-                # Rollback
-                percentages.at[source] += percent_transfer
-                percentages.at[dest] -= percent_transfer
-            else:
-                new_sharpe = self.port.get_sharpe()
-                if new_sharpe > current_sharpe:
-                    current_sharpe = new_sharpe
+                source = random.choice(non_zero_percentages.index)
+                dest = random.choice(zero_percentages.index)
+
+                percentage_value = percentages.at[source]
+                percentages.at[source] = 0.0
+                percentages.at[dest] = percentage_value
+
+                if (not(self.port.is_valid())):
+                    # Rollback
+                    percentages.at[source] = percentge_value
+                    percentages.at[dest] = 0.0
                 else:
+                    new_sharpe = self.port.get_sharpe()
+                    if new_sharpe > current_sharpe:
+                        current_sharpe = new_sharpe
+                    else:
+                        # Rollback
+                        percentages.at[source] = percentage_value
+                        percentages.at[dest] = 0.0
+
+            else:
+                reduceable_percentages = percentages[percentages >= (
+                    min_nav_percentage + percent_transfer)]
+                growable_percentages = percentages[percentages <= (
+                    max_nav_percentage - percent_transfer)]
+                source = random.choice(reduceable_percentages.index)
+                dest = random.choice(growable_percentages.index)
+
+                percentages.at[source] -= percent_transfer
+                percentages.at[dest] += percent_transfer
+
+                if (not(self.port.is_valid())):
                     # Rollback
                     percentages.at[source] += percent_transfer
                     percentages.at[dest] -= percent_transfer
+                else:
+                    new_sharpe = self.port.get_sharpe()
+                    if new_sharpe > current_sharpe:
+                        current_sharpe = new_sharpe
+                    else:
+                        # Rollback
+                        percentages.at[source] += percent_transfer
+                        percentages.at[dest] -= percent_transfer
 
             percent_transfer *= percent_transfer_decay
+            exploration_proba *= exploration_decay
 
-    def markov(self, max_iter=1000, percent_transfer=0.02, percent_transfer_decay=1.0):
+    def markov(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.99):
         self.set_default_valid_navs()
         assert(self.port.is_valid())
-        self._markov(max_iter, percent_transfer, percent_transfer_decay)
+        self._markov(max_iter, percent_transfer, percent_transfer_decay, exploration_decay)
         assert(self.port.is_valid())
 
 
