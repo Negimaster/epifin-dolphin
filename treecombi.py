@@ -153,18 +153,19 @@ class TreeCombi:
 
             if random.random() < exploration_proba:
                 non_zero_percentages = percentages[percentages > 0.0]
-                zero_percentages = percentages[percentages == 0.0]
-
                 source = random.choice(non_zero_percentages.index)
-                dest = random.choice(zero_percentages.index)
-
                 percentage_value = percentages.at[source]
+
+                receivable_percentages = percentages[(percentages == 0.0) | (percentages <= max_nav_percentage - percentage_value)]
+
+                dest = random.choice(receivable_percentages.index)
+
                 percentages.at[source] = 0.0
                 percentages.at[dest] = percentage_value
 
                 if (not(self.port.is_valid())):
                     # Rollback
-                    percentages.at[source] = percentge_value
+                    percentages.at[source] = percentage_value
                     percentages.at[dest] = 0.0
                 else:
                     new_sharpe = self.port.get_sharpe()
