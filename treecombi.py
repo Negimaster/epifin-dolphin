@@ -142,7 +142,7 @@ class TreeCombi:
         # for index in best_stock_sharpes.index[nb_asset:]:
         #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
 
-    def _markov(self, max_iter, percent_transfer, alpha):
+    def _markov(self, max_iter, percent_transfer, percent_transfer_decay):
         percentages = self.port.dataframe['NAVPercentage']
         min_nav_percentage = 0.01
         max_nav_percentage = 0.1
@@ -171,12 +171,13 @@ class TreeCombi:
                     percentages.at[source] += percent_transfer
                     percentages.at[dest] -= percent_transfer
 
-            percent_transfer *= alpha
+            percent_transfer *= percent_transfer_decay
 
-    def markov(self, max_iter=1000, percent_transfer=0.02, alpha=1.0):
+    def markov(self, max_iter=1000, percent_transfer=0.02, percent_transfer_decay=1.0):
         self.set_default_valid_navs()
         assert(self.port.is_valid())
-        self._markov(max_iter, percent_transfer, alpha)
+        self._markov(max_iter, percent_transfer, percent_transfer_decay)
+        assert(self.port.is_valid())
 
 
 if __name__ == "__main__":
