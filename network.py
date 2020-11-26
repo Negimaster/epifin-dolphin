@@ -48,8 +48,8 @@ class NetworkManager():
         self.PORT = 8443
         self.APIVERSION = 'v1'
         self.URL = f'{self.SCHEME}://{self.HOST_NAME}:{self.PORT}/api/{self.APIVERSION}/'
-        #self.HEADERS = { 'Authorization': self.__getAuth() }
-        #self.session = Session(auth=(self.__USERNAME,self.__PASSWORD), headers=self.HEADERS)
+        # self.HEADERS = { 'Authorization': self.__getAuth() }
+        # self.session = Session(auth=(self.__USERNAME,self.__PASSWORD), headers=self.HEADERS)
 
         # session
         self.session = Session()
@@ -58,15 +58,21 @@ class NetworkManager():
 
     def __call__(self, endpoint, params):
         url = urljoin(self.URL, endpoint)
-        return self.session.get(url, params=params)
+        req = self.session.get(url, params=params)
+        req.raise_for_status()
+        return req
 
     def post(self, endpoint, params, payload):
         url = urljoin(self.URL, endpoint)
-        return self.session.post(url, params=params, json=payload)
+        req = self.session.post(url, params=params, json=payload)
+        req.raise_for_status()
+        return req
 
     def put(self, endpoint, params, payload):
         url = urljoin(self.URL, endpoint)
-        return self.session.put(url, params=params, json=payload)
+        req = self.session.put(url, params=params, json=payload)
+        req.raise_for_status()
+        return req
 
     '''
     def __getAuth(self):
@@ -95,91 +101,75 @@ class RestManager(NetworkManager):
                 Returns:
                         json (list): list of pars dictionary
         '''
-        try:
-            params = {'date': parDate, 'columns': columns}
-            if fullResponse:
-                params['fullResponse'] = fullResponse
-            resp = self('asset', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = {'date': parDate, 'columns': columns}
+        if fullResponse:
+            params['fullResponse'] = fullResponse
+        resp = self('asset', params=params)
+        return resp.json()
 
     def getAsset(self, parId, parDate, columns=['ASSET_DATABASE_ID', 'LABEL', 'LAST_CLOSE_VALUE_IN_CURR', 'TYPE', 'CURRENCY'], fullResponse=False):
-        try:
-            params = {'date': parDate, 'columns': columns}
-            if fullResponse:
-                params['fullResponse'] = fullResponse
-            resp = self(f'asset/{parId}', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = {'date': parDate, 'columns': columns}
+        if fullResponse:
+            params['fullResponse'] = fullResponse
+        resp = self(f'asset/{parId}', params=params)
+        return resp.json()
 
     def getAssetAttr(self, parId, parAttr, parDate, fullResponse=False):
-        try:
-            params = {'date': parDate}
-            if fullResponse:
-                params['fullResponse'] = fullResponse
-            resp = self(f'asset/{parId}/attribute/{parAttr}', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = {'date': parDate}
+        if fullResponse:
+            params['fullResponse'] = fullResponse
+        resp = self(f'asset/{parId}/attribute/{parAttr}', params=params)
+        return resp.json()
 
     def getQuote(self, parId, parStartDate, parEndDate):
-        try:
-            params = {'start_date': parStartDate, 'end_date': parEndDate}
-            resp = self(f'asset/{parId}/quote', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = {'start_date': parStartDate, 'end_date': parEndDate}
+        resp = self(f'asset/{parId}/quote', params=params)
+        return resp.json()
 
     def getPortfolio(self, parId):
-        try:
-            params = []
-            resp = self(f'portfolio/{parId}/dyn_amount_compo', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = []
+        resp = self(f'portfolio/{parId}/dyn_amount_compo', params=params)
+        return resp.json()
 
     def putPortfolio(self, parId, portfolioLabel, currency, amount_type, values):
-        try:
-            params = []
-            payload = {'label': portfolioLabel,
-                       'currency': currency,
-                       'type': amount_type,
-                       'values': values}
-            resp = self.put(
-                f'portfolio/{parId}/dyn_amount_compo', params=params, payload=payload)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = []
+        payload = {'label': portfolioLabel,
+                   'currency': currency,
+                   'type': amount_type,
+                   'values': values}
+        resp = self.put(
+            f'portfolio/{parId}/dyn_amount_compo', params=params, payload=payload)
+        return resp  # .json()
 
     def getRatio(self):
-        try:
-            params = []
-            resp = self('ratio', params=params)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = []
+        resp = self('ratio', params=params)
+        return resp.json()
 
     def putRatio(self, ratio, asset, benchmark, start_date, end_date, frequency, fullResponse=False):
-        try:
-            params = []
-            if fullResponse:
-                params['fullResponse'] = fullResponse
-            payload = {'ratio': ratio,
-                       'asset': asset,
-                       'benchmark': benchmark,
-                       'start_date': start_date,
-                       'end_date': end_date,
-                       'frequency': frequency}
-            resp = self.post('ratio/invoke', params=params, payload=payload)
-            return resp.json()
-        except Exception as e:
-            return e
+        params = []
+        if fullResponse:
+            params['fullResponse'] = fullResponse
+        payload = {'ratio': ratio,
+                   'asset': asset,
+                   'benchmark': benchmark,
+                   'start_date': start_date,
+                   'end_date': end_date,
+                   'frequency': frequency}
+        resp = self.post('ratio/invoke', params=params, payload=payload)
+        return resp.json()
+
+    def getConvRate(self, currency_src, currency_dest="EUR"):
+        req = f'currency/rate/{currency_src}/to/{currency_dest}'
+        resp = self(req, params=[])
+        return float(resp.json()["rate"]["value"].replace(",", "."))
 
 
 if __name__ == "__main__":
     r = RestManager()
     ratios = r.getRatio()
+    list_curs = ["USD", "EUR"]
+    for cur in list_curs:
+        print(r.getConvRate(cur))
     ratios = pd.DataFrame.from_dict(ratios).set_index("id")
     print(ratios)
