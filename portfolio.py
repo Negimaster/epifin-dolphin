@@ -97,6 +97,7 @@ class Portfolio:
         self.dataframe['assetValue'] *= self.dataframe['assetCurrency'].apply(
             lambda cur: self.curs[cur])
         self.dataframe['assetCurrency'] = "EUR"
+        self.portfolioid = 1824
 
     def get_dataframe(self):
         return self.dataframe
@@ -277,6 +278,20 @@ class Portfolio:
 
         # print(f'valid_navs: {valid_navs}')
         return valid_nb_different_assets and at_least_half_actions and valid_navs
+
+    def push(self):
+        date = self.START_DATE.split("T")[0]
+        input(date)
+        r = self.r.putPortfolio(self.portfolioid, 'EPITA_PTF_5',
+                                {'code': 'EUR'}, 'front', {date: self.to_json()})
+        print(r.text, r.status_code)
+
+    def to_json(self):
+        dic = [{'asset': {'asset': assetid, 'quantity': quantity}}
+               for assetid, quantity in
+               zip(self.dataframe.index, self.dataframe.quantity)
+               if quantity != 0]
+        return dic
 
 
 if __name__ == "__main__":

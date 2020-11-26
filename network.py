@@ -139,7 +139,7 @@ class RestManager(NetworkManager):
                    'values': values}
         resp = self.put(
             f'portfolio/{parId}/dyn_amount_compo', params=params, payload=payload)
-        return resp.json()
+        return resp  # .json()
 
     def getRatio(self):
         params = []

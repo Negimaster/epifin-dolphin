@@ -238,4 +238,6 @@ if __name__ == "__main__":
     print(qty)
     # print(qty, qty.isnull().any(), len(qty[qty < 0]))
     # print(t.port.dataframe)
-    print(t.port.get_sharpe())
+    print(f'sharpe: {t.port.get_sharpe()}')
+    if input("Push ?") == "y":
+        t.port.push()
