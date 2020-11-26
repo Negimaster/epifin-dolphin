@@ -115,6 +115,10 @@ class Portfolio:
         self.dataframe['NAVPercentage'] = self.dataframe['totalValue'] / \
             self.dataframe['totalValue'].sum()
 
+    def update_ttvalue(self):
+        self.dataframe['totalValue'] = self.dataframe['quantity'] * \
+            self.dataframe['assetValue']
+
     def get_asset(self, id, n):
         quantity = self.dataframe.loc[id, 'quantity']
         self.dataframe.loc[id, 'quantity'] += n if n + \
@@ -253,8 +257,7 @@ class Portfolio:
         self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
         assert(not self.dataframe['quantity'].isnull().any() and
                not (self.dataframe['quantity'] < 0).any())
-        self.dataframe['totalValue'] = self.dataframe['quantity'] * \
-            self.dataframe['assetValue']
+        self.update_ttvalue()
         self.update_nav()
         assert(self.is_valid())
         return self.dataframe['quantity']
