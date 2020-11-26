@@ -13,8 +13,9 @@ class Portfolio(object):
                  init_cor=True,
                  restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None,
-                 ignored_products=['PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND']):
-        assert('PORTFOLIO' in ignored_products)
+                 allowed_products=['STOCK']):
+        # other product types : 'PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND'
+        assert('PORTFOLIO' not in allowed_products)
         self.portfolioid = portfolioid
         self.r = restManager
         if not isinstance(self.r, RestManager):
@@ -91,9 +92,8 @@ class Portfolio(object):
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
         self.dataframe.dropna(inplace=True)
-        self.dataframe = self.dataframe[~self.dataframe.assetType.isin(
-            ignored_products)]
-        #self.dataframe = self.dataframe[self.dataframe.assetType != 'PORTFOLIO']
+        self.dataframe = self.dataframe[self.dataframe.assetType.isin(
+            allowed_products)]
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
