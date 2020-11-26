@@ -148,6 +148,8 @@ class Markov(Optimizer):
         current_sharpe = self.port.get_sharpe()
         exploration_proba = exploration_decay
 
+        count_explo = 0
+
         for iteration in range(max_iter):
 
             if random.random() < exploration_proba:
@@ -161,12 +163,14 @@ class Markov(Optimizer):
                 dest = random.choice(receivable_percentages.index)
 
                 percentages.at[source] = 0.0
-                percentages.at[dest] = percentage_value
+                percentages.at[dest] += percentage_value
+
+                count_explo += 1
 
                 if (not(self.port.is_valid())):
                     # Rollback
                     percentages.at[source] = percentage_value
-                    percentages.at[dest] = 0.0
+                    percentages.at[dest] -= percentage_value
                 else:
                     new_sharpe = self.port.get_sharpe()
                     if new_sharpe > current_sharpe:
@@ -174,7 +178,7 @@ class Markov(Optimizer):
                     else:
                         # Rollback
                         percentages.at[source] = percentage_value
-                        percentages.at[dest] = 0.0
+                        percentages.at[dest] -= percentage_value
 
             else:
                 reduceable_percentages = percentages[percentages >= (
@@ -200,15 +204,19 @@ class Markov(Optimizer):
                         percentages.at[source] += percent_transfer
                         percentages.at[dest] -= percent_transfer
 
-            percent_transfer *= percent_transfer_decay
+                percent_transfer *= percent_transfer_decay
+
             exploration_proba *= exploration_decay
 
-    def __call__(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.99):
+        print('Exploration rate: ', count_explo / max_iter)
+        print('Last percent_tranfer value: ', percent_transfer)
+
+    def __call__(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.999):
         self.set_default_valid_navs()
         assert(self.port.is_valid())
         self._markov(max_iter, percent_transfer,
                      percent_transfer_decay, exploration_decay)
-        assert(self.port.is_valid())
+        assert(self.port.is_valid(True))
 
 
 if __name__ == "__main__":

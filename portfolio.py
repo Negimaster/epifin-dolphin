@@ -256,27 +256,33 @@ class Portfolio:
         self.dataframe['totalValue'] = self.dataframe['quantity'] * \
             self.dataframe['assetValue']
         self.update_nav()
-        assert(self.is_valid())
+        assert(self.is_valid(True))
         return self.dataframe['quantity']
 
-    def is_valid(self):
+    def is_valid(self, print_values=False):
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
 
-        # print(f'valid_nb_different_assets: {valid_nb_different_assets}')
+        if print_values and not valid_nb_different_assets:
+            print(f'valid_nb_different_assets: {valid_nb_different_assets}')
+            print(f'nb_different_assets: {nb_different_assets}')
 
         stock_navs = self.dataframe[(self.dataframe['NAVPercentage'] != 0.0) & (
             self.dataframe['assetType'] == 'STOCK')]['NAVPercentage']
         sum_stock_navs = stock_navs.sum()
         at_least_half_actions = sum_stock_navs >= 0.5
 
-        # print(f'at_least_half_actions: {at_least_half_actions}')
+        if print_values and not at_least_half_actions:
+            print(f'at_least_half_actions: {at_least_half_actions}')
+            print(f'Stock proportion: {sum_stock_navs}')
 
         non_zero_navs = self.dataframe[self.dataframe['NAVPercentage']
                                        != 0]['NAVPercentage']
         valid_navs = ((non_zero_navs >= 0.01) & (non_zero_navs <= 0.10)).all()
 
-        # print(f'valid_navs: {valid_navs}')
+        if print_values and not valid_navs:
+            print(f'valid_navs: {valid_navs}')
+            print(non_zero_navs)
         return valid_nb_different_assets and at_least_half_actions and valid_navs
 
     def push(self):
