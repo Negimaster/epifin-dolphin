@@ -25,8 +25,7 @@ def get_combis(elems):  # elems = deque(elems)
         yield elems
 
 
-class TreeCombi:
-    # TODO: add father class
+class Optimizer(object):
     def __init__(self, port, min_assets=15, max_assets=40,
                  lr=0.01, min_sharpe_change=0.05):
         # Data
@@ -50,6 +49,23 @@ class TreeCombi:
         self.t1 = time.time()
         self.elp = 0
         self.est = 0
+
+    def set_default_valid_navs(self):
+        best_stock_sharpes = self.port.dataframe[self.port.dataframe['assetType'] == 'STOCK']['sharpe'].copy(
+        ).sort_values(ascending=False)  # by=['sharpe'],
+        nb_asset = self.max_assets
+        self.port.dataframe['NAVPercentage'] = 0.0
+        default_value = 1.0 / nb_asset
+        for index in best_stock_sharpes.index[:nb_asset]:
+            self.port.dataframe.at[index, 'NAVPercentage'] = default_value
+        # for index in best_stock_sharpes.index[nb_asset:]:
+        #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
+
+
+class TreeCombi(Optimizer):
+    def __init__(self, port, min_assets=15, max_assets=40,
+                 lr=0.01, min_sharpe_change=0.05):
+        super().__init__(port, min_assets, max_assets, lr, min_sharpe_change)
         print(f'nb_combis: {self.nb_combis}')  # Wrong TODO: FIXME
 
     def __process(self, index):
@@ -124,16 +140,11 @@ class TreeCombi:
                 self.c = c  # Our elems rotation
                 self(0, nb_assets=nb_assets, s=s)
 
-    def set_default_valid_navs(self):
-        best_stock_sharpes = self.port.dataframe[self.port.dataframe['assetType'] == 'STOCK']['sharpe'].copy(
-        ).sort_values(ascending=False)  # by=['sharpe'],
-        nb_asset = self.max_assets
-        self.port.dataframe['NAVPercentage'] = 0.0
-        default_value = 1.0 / nb_asset
-        for index in best_stock_sharpes.index[:nb_asset]:
-            self.port.dataframe.at[index, 'NAVPercentage'] = default_value
-        # for index in best_stock_sharpes.index[nb_asset:]:
-        #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
+
+class Markov(Optimizer):
+    def __init__(self, port, min_assets=15, max_assets=40,
+                 lr=0.01, min_sharpe_change=0.05):
+        super().__init__(port, min_assets, max_assets, lr, min_sharpe_change)
 
     def _markov(self, max_iter, percent_transfer, percent_transfer_decay, exploration_decay):
         percentages = self.port.dataframe['NAVPercentage']
@@ -197,7 +208,7 @@ class TreeCombi:
             percent_transfer *= percent_transfer_decay
             exploration_proba *= exploration_decay
 
-    def markov(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.99):
+    def __call__(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.99):
         self.set_default_valid_navs()
         assert(self.port.is_valid())
         self._markov(max_iter, percent_transfer,
@@ -224,9 +235,11 @@ if __name__ == "__main__":
     if input("Launch ?") != "y":
         exit(0)
     p.dump_cov()
-    t = TreeCombi(p)
+    t = Markov(p)
+    # TreeCombi(p)
     # t()
-    t.markov()
+    # t.markov()
+    t()
     qty = t.port.build_quantities()
     print(qty)
     # print(qty, qty.isnull().any(), len(qty[qty < 0]))
