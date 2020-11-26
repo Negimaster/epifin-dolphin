@@ -89,6 +89,7 @@ class Portfolio(object):
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
         self.dataframe.dropna(inplace=True)
+        self.dataframe = self.dataframe[self.dataframe.assetType != 'PORTFOLIO']
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
