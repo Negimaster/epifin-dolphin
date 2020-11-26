@@ -84,11 +84,19 @@ class Portfolio:
             else:
                 self.dataframe = dataframe.copy()
         self.dataframe = self.dataframe.astype(
-            {'totalValue': 'float64', 'NAVPercentage': 'float64'})
+            {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
+        self.dataframe.dropna(inplace=True)
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
             self.cov[i] = None
+
+        self.curs = {c: self.r.getConvRate(
+            c) for c in self.dataframe["assetCurrency"].unique()}
+        # print(self.dataframe)
+        self.dataframe['assetValue'] *= self.dataframe['assetCurrency'].apply(
+            lambda cur: self.curs[cur])
+        self.dataframe['assetCurrency'] = "EUR"
 
     def get_dataframe(self):
         return self.dataframe
@@ -200,7 +208,7 @@ class Portfolio:
         if variance == 0:
             raise RuntimeError('Invalid Variance cannot be zero !')
         r = (rendement - 0.0005) / np.sqrt(variance)
-        #if (math.isnan(variance) or variance <= 0.0):
+        # if (math.isnan(variance) or variance <= 0.0):
         #    print(variance)
         if math.isnan(r):
             return float("-inf")
@@ -233,6 +241,19 @@ class Portfolio:
         """
         self.dataframe.to_csv(file)
 
+    def build_quantities(self):
+        # print(self.dataframe.isnull().values.sum())
+        assert(not self.dataframe.isnull().values.any())
+        total_budget = 1e10
+        price_by_asset = self.dataframe['assetValue']
+        budget_by_asset = self.dataframe['NAVPercentage'] * total_budget
+        quantity_by_asset = np.ceil(budget_by_asset / price_by_asset)
+        self.dataframe['quantity'] = quantity_by_asset
+        self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
+        assert(not self.dataframe['quantity'].isnull().any() and
+               not (self.dataframe['quantity'] < 0).any())
+        return self.dataframe['quantity']
+
     def is_valid(self):
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
@@ -260,5 +281,6 @@ if __name__ == "__main__":
     print(p.get_sharpe())
     print(p.get_dataframe())
     print(p.is_valid())
+    # print(p.dataframe["assetCurrency"].unique())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])

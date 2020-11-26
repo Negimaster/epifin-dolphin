@@ -159,9 +159,17 @@ class RestManager(NetworkManager):
         resp = self.post('ratio/invoke', params=params, payload=payload)
         return resp.json()
 
+    def getConvRate(self, currency_src, currency_dest="EUR"):
+        req = f'currency/rate/{currency_src}/to/{currency_dest}'
+        resp = self(req, params=[])
+        return float(resp.json()["rate"]["value"].replace(",", "."))
+
 
 if __name__ == "__main__":
     r = RestManager()
     ratios = r.getRatio()
+    list_curs = ["USD", "EUR"]
+    for cur in list_curs:
+        print(r.getConvRate(cur))
     ratios = pd.DataFrame.from_dict(ratios).set_index("id")
     print(ratios)

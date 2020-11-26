@@ -156,7 +156,8 @@ class TreeCombi:
                 source = random.choice(non_zero_percentages.index)
                 percentage_value = percentages.at[source]
 
-                receivable_percentages = percentages[(percentages == 0.0) | (percentages <= max_nav_percentage - percentage_value)]
+                receivable_percentages = percentages[(percentages == 0.0) | (
+                    percentages <= max_nav_percentage - percentage_value)]
 
                 dest = random.choice(receivable_percentages.index)
 
@@ -206,7 +207,8 @@ class TreeCombi:
     def markov(self, max_iter=1000, percent_transfer=0.005, percent_transfer_decay=0.999, exploration_decay=0.99):
         self.set_default_valid_navs()
         assert(self.port.is_valid())
-        self._markov(max_iter, percent_transfer, percent_transfer_decay, exploration_decay)
+        self._markov(max_iter, percent_transfer,
+                     percent_transfer_decay, exploration_decay)
         assert(self.port.is_valid())
 
 
@@ -232,5 +234,7 @@ if __name__ == "__main__":
     t = TreeCombi(p)
     # t()
     t.markov()
+    qty = t.port.build_quantities()
+    #print(qty, qty.isnull().any(), len(qty[qty < 0]))
     # print(t.port.dataframe)
     print(t.port.get_sharpe())
