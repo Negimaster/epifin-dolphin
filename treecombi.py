@@ -235,6 +235,7 @@ if __name__ == "__main__":
     # t()
     t.markov()
     qty = t.port.build_quantities()
-    #print(qty, qty.isnull().any(), len(qty[qty < 0]))
+    print(qty)
+    # print(qty, qty.isnull().any(), len(qty[qty < 0]))
     # print(t.port.dataframe)
     print(t.port.get_sharpe())
