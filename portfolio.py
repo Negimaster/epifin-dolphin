@@ -48,7 +48,7 @@ class Portfolio:
                     self.dataframe['assetValue'], errors='coerce')
 
                 resp = self.r.putRatio([13, 12, 10, 9], company_id_array,
-                                       None, self.START_DATE, self.END_DATE, 'yearly')
+                                       None, self.START_DATE, self.END_DATE, None)
 
                 self.dataframe['ROI'] = None
                 self.dataframe['annualROI'] = None
@@ -133,7 +133,7 @@ class Portfolio:
             return self.load_cov()
         for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
-                [11], self.get_index(), i, self.START_DATE, self.END_DATE, 'yearly')
+                [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
             l = []  # np.array(len(correlationResp))
             for j in self.dataframe.index:
                 j = str(j)
@@ -166,7 +166,7 @@ class Portfolio:
         if self.cov.loc[i, j] is None or math.isnan(self.cov.loc[i, j]):
             raise RuntimeError(f"Should be init at : {i},{j}")
             correlationResp = self.r.putRatio(
-                [11], [i], j, self.START_DATE, self.END_DATE, "yearly")
+                [11], [i], j, self.START_DATE, self.END_DATE, None)
             if correlationResp[str(i)]['11']['type'] == 'double':
                 correlation = float(
                     (correlationResp[str(i)]['11']['value']).replace(',', '.'))
