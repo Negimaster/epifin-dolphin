@@ -2,6 +2,7 @@ epifin-dolphin
 ==============
 
 # Authors
+
 - geoffrey.bossut
 - guillaume.blassel
 - francois.te
@@ -9,6 +10,8 @@ epifin-dolphin
 # Setup
 
 ## Install
+
+Run the following commands (optionally in a venv)
 
 ```sh
 pip3 install -r requirements.txt
@@ -23,7 +26,18 @@ DOLPHIN_USERNAME=EPITA_GROUPE5
 DOLPHIN_PASSWORD=pwd
 ```
 
-# Launch
+# Run
+
+## Project demo
+
+Run the project the first time to create files with the API data, then run again.
+
+```sh
+python3 treecombi.py
+Launch ?n
+python3 treecombi.py
+Launch ?y
+```
 
 ## Network demo
 
@@ -31,5 +45,12 @@ DOLPHIN_PASSWORD=pwd
 python3 network.py
 ```
 
-# Remarque
+# Tests
+
+```sh
+pytest tests.py
+```
+
+# Remarques
+
 Nous travaillons principalement sur Google Colab
