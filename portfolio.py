@@ -106,6 +106,40 @@ class Portfolio(object):
         self.dataframe['assetCurrency'] = "EUR"
         assert(not self.dataframe.isnull().values.any())
 
+    def __init_correlation(self):
+        """
+        Fills in correlation matrix but takes 3 minutes
+        """
+        if os.path.isfile("cov.npy"):
+            return self.load_cov()
+        for nbi, i in enumerate(self.dataframe.index):
+            correlationResp = self.r.putRatio(
+                [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
+            l = []  # np.array(len(correlationResp))
+            for j in self.dataframe.index:
+                j = str(j)
+                if correlationResp[j]['11']['type'] == 'double':
+                    l.append(float(
+                        correlationResp[j]['11']['value'].replace(',', '.')))
+                else:
+                    l.append(float("nan"))
+            self.cov.loc[i] = l
+            self.cov[i] = l
+            print(
+                f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
+        # print(self.cov)
+        toremove = self.cov.isnull().all(axis=1)
+        toremove = [i for i in toremove.index if toremove.loc[i]]
+        self.dataframe.drop(toremove, inplace=True)
+        self.cov.dropna(axis=0, how="all", inplace=True)
+        self.cov.dropna(axis=1, how="all", inplace=True)
+        # print(self.cov)
+        # print(self.dataframe)
+        assert(not self.cov.isnull().values.any())
+        if not os.path.isfile("cov.npy"):
+            self.dump_cov()
+        return self.cov
+
     def retrieve_portfolio(self):
         date = self.START_DATE.split("T")[0]
         p = self.r.getPortfolio(self.portfolioid)
@@ -148,38 +182,6 @@ class Portfolio(object):
         return self.dataframe
 
     def print_cov(self):
-        return self.cov
-
-    # Fills in correlation matrix but takes 3 minutes
-    def __init_correlation(self):
-        if os.path.isfile("cov.npy"):
-            return self.load_cov()
-        for nbi, i in enumerate(self.dataframe.index):
-            correlationResp = self.r.putRatio(
-                [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
-            l = []  # np.array(len(correlationResp))
-            for j in self.dataframe.index:
-                j = str(j)
-                if correlationResp[j]['11']['type'] == 'double':
-                    l.append(float(
-                        correlationResp[j]['11']['value'].replace(',', '.')))
-                else:
-                    l.append(float("nan"))
-            self.cov.loc[i] = l
-            self.cov[i] = l
-            print(
-                f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
-        # print(self.cov)
-        toremove = self.cov.isnull().all(axis=1)
-        toremove = [i for i in toremove.index if toremove.loc[i]]
-        self.dataframe.drop(toremove, inplace=True)
-        self.cov.dropna(axis=0, how="all", inplace=True)
-        self.cov.dropna(axis=1, how="all", inplace=True)
-        # print(self.cov)
-        # print(self.dataframe)
-        assert(not self.cov.isnull().values.any())
-        if not os.path.isfile("cov.npy"):
-            self.dump_cov()
         return self.cov
 
     def get_covariance_unused(self, i, j):
