@@ -12,7 +12,9 @@ class Portfolio(object):
     def __init__(self, path=None, dataframe=None, retrieve=False,
                  init_cor=True,
                  restManager=RestManager(), portfolioid=1824,
-                 START_DATE=None, END_DATE=None):
+                 START_DATE=None, END_DATE=None,
+                 ignored_products=['PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND']):
+        assert('PORTFOLIO' in ignored_products)
         self.portfolioid = portfolioid
         self.r = restManager
         if not isinstance(self.r, RestManager):
@@ -89,7 +91,9 @@ class Portfolio(object):
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
         self.dataframe.dropna(inplace=True)
-        self.dataframe = self.dataframe[self.dataframe.assetType != 'PORTFOLIO']
+        self.dataframe = self.dataframe[~self.dataframe.assetType.isin(
+            ignored_products)]
+        #self.dataframe = self.dataframe[self.dataframe.assetType != 'PORTFOLIO']
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
@@ -337,6 +341,7 @@ if __name__ == "__main__":
     print(p.get_sharpe())
     print(p.get_dataframe())
     print(p.is_valid())
+    print(p.dataframe.assetType.unique())
     # print(p.dataframe["assetCurrency"].unique())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])
