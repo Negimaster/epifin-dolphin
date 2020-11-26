@@ -74,6 +74,9 @@ class NetworkManager():
         req.raise_for_status()
         return req
 
+    def checkpassword(self):
+        return bytes(input("Password ?"), 'utf-8') == self.__PASSWORD
+
     '''
     def __getAuth(self):
         return 'Basic ' + b64encode(b':'.join((self.__USERNAME, self.__PASSWORD))).strip().decode('utf-8')

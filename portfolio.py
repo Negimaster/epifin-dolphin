@@ -104,6 +104,7 @@ class Portfolio(object):
         self.dataframe['assetValue'] *= self.dataframe['assetCurrency'].apply(
             lambda cur: self.curs[cur])
         self.dataframe['assetCurrency'] = "EUR"
+        assert(not self.dataframe.isnull().values.any())
 
     def retrieve_portfolio(self):
         date = self.START_DATE.split("T")[0]
@@ -308,10 +309,14 @@ class Portfolio(object):
 
     def push(self):
         date = self.START_DATE.split("T")[0]
-        input(date)
-        r = self.r.putPortfolio(self.portfolioid, 'EPITA_PTF_5',
-                                {'code': 'EUR'}, 'front', {date: self.to_json()})
-        print(r.text, r.status_code)
+        if self.r.checkpassword():
+            r = self.r.putPortfolio(self.portfolioid, 'EPITA_PTF_5',
+                                    {'code': 'EUR'}, 'front', {date: self.to_json()})
+            assert(r.status_code == 200)
+            print("Successfully Pushed !")
+            # print(r.text, r.status_code)
+        else:
+            print("Invalid Password !")
 
     def to_json(self):
         dic = [{'asset': {'asset': assetid, 'quantity': quantity}}
