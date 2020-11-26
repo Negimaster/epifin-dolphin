@@ -13,10 +13,12 @@ class Portfolio(object):
                  init_cor=True,
                  restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None,
+                 total_budget=1e10,
                  allowed_products=['STOCK']):
         # other product types : 'PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND'
         assert('PORTFOLIO' not in allowed_products)
         self.portfolioid = portfolioid
+        self.total_budget = total_budget
         self.r = restManager
         if not isinstance(self.r, RestManager):
             raise RuntimeError(
@@ -277,9 +279,8 @@ class Portfolio(object):
     def build_quantities(self):
         # print(self.dataframe.isnull().values.sum())
         assert(not self.dataframe.isnull().values.any())
-        total_budget = 1e10
         price_by_asset = self.dataframe['assetValue']
-        budget_by_asset = self.dataframe['NAVPercentage'] * total_budget
+        budget_by_asset = self.dataframe['NAVPercentage'] * self.total_budget
         quantity_by_asset = np.ceil(budget_by_asset / price_by_asset)
         self.dataframe['quantity'] = quantity_by_asset
         self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
