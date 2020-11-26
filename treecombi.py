@@ -18,9 +18,9 @@ def rot(elems, n):
     return elems[n:] + elems[:n]
 
 
-def get_combis(elems):  # elems = deque(elems)
+def get_combis(elems):  # Faster: elems = deque(elems)
     yield elems
-    for n in range(1, len(elems)):  # elems.rotate(1)
+    for n in range(1, len(elems)):  # Faster: elems.rotate(1)
         elems = rot(elems, 1)
         yield elems
 
@@ -38,7 +38,8 @@ class Optimizer(object):
         self.bestcompo = ""
         self.bestsharpe = 0.0
         # Iter
-        # self.nb_combis = pow(2, self.end) - 1  # this is wrong since min_assets
+        # no rotation not full tree: self.nb_combis = pow(2, self.end) - 1
+        # (this is wrong since min_assets)
         # Following is also wrong since min_sharpe_change
         self.nb_combis = (pow(2, self.max_assets) - 1) * self.end
         self.iter = 0
@@ -52,14 +53,12 @@ class Optimizer(object):
 
     def set_default_valid_navs(self):
         best_stock_sharpes = self.port.dataframe[self.port.dataframe['assetType'] == 'STOCK']['sharpe'].copy(
-        ).sort_values(ascending=False)  # by=['sharpe'],
+        ).sort_values(ascending=False)
         nb_asset = self.max_assets
         self.port.dataframe['NAVPercentage'] = 0.0
         default_value = 1.0 / nb_asset
         for index in best_stock_sharpes.index[:nb_asset]:
             self.port.dataframe.at[index, 'NAVPercentage'] = default_value
-        # for index in best_stock_sharpes.index[nb_asset:]:
-        #    self.port.dataframe[index, 'NAVPercentage'] = 0.0
 
 
 class TreeCombi(Optimizer):
@@ -69,26 +68,22 @@ class TreeCombi(Optimizer):
         print(f'nb_combis: {self.nb_combis}')  # Wrong TODO: FIXME
 
     def __process(self, index):
-        # FIXME: compute sharpe for port
-        # get_sharpe(self.port)
-        portSharp = self.port.get_sharpe()  # fake_sharpefunction(self.port)
+        portSharp = self.port.get_sharpe()
         portSharp_1 = portSharp
         while True:
             # save navPer and portSharp
             navPer = self.port.dataframe.at[self.port.dataframe.index[index],
                                             "NAVPercentage"]
             portSharp = portSharp_1
-            if math.isnan(portSharp):  # portSharp = float("-inf")
+            if math.isnan(portSharp):
                 raise RuntimeError(f"portSharp: {portSharp} is NAN !")
             # update df navPer according to learning rate self.lr
-            # self.port[index] += self.lr
             if self.port.dataframe.at[self.port.dataframe.index[index],
                                       "NAVPercentage"] + self.lr >= 0.1:
                 return portSharp
             self.port.dataframe.at[self.port.dataframe.index[index],
                                    "NAVPercentage"] = navPer + self.lr
             # compute new portShrap
-            # fake_sharpefunction(self.port)
             portSharp_1 = self.port.get_sharpe()
             if portSharp_1 <= portSharp:
                 break
@@ -107,14 +102,14 @@ class TreeCombi(Optimizer):
         if nb_assets >= self.max_assets:  # We need the rot approach
             return
         if start != -1:  # Process element at start index
-            # str(self.port[start]) + ","  # Just for testing purpose
+            # Just for testing purpose:  str(self.port[start]) + ","
             nb_assets += 1
             s += str(self.c[start]) + ","
             self.iter += 1
             ti = time.time()  # took: Current iteration time
 
             # Processing
-            # time.sleep(0.1 + random.random() / 2)  # Process element...
+            # Testing: time.sleep(0.1 + random.random() / 2)  # Process element...
             portsharpe = self.__process(self.c[start])
             print(self.c[start])
             if nb_assets >= self.min_assets and nb_assets <= self.max_assets:
@@ -218,32 +213,26 @@ class Markov(Optimizer):
 
 if __name__ == "__main__":
     r = RestManager()
-    # """
     if os.path.isfile("full.csv"):
         p = Portfolio(path="full.csv", restManager=r)
         print(p.init_correlation())
     else:
         p = Portfolio(restManager=r)
         df = p.dataframe.copy().sort_values(
-            by=['sharpe'], ascending=False)  # [:5]
+            by=['sharpe'], ascending=False)
         p = Portfolio(dataframe=df, restManager=r)
         print(p.init_correlation())
         p.dump_portfolio()
     print(p.dataframe.columns)
-    print(p.dataframe)  # ["sharpe"]
-    # p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
+    print(p.dataframe)
+    # uniform Init: p.dataframe["NAVPercentage"] = 1.0 / p.dataframe.shape[0]
     if input("Launch ?") != "y":
         exit(0)
     p.dump_cov()
     t = Markov(p)
-    # TreeCombi(p)
-    # t()
-    # t.markov()
     t()
     qty = t.port.build_quantities()
     print(qty)
-    # print(qty, qty.isnull().any(), len(qty[qty < 0]))
-    # print(t.port.dataframe)
     print(f'sharpe: {t.port.get_sharpe()}')
     if input("Push ?") == "y":
         t.port.push()
