@@ -26,7 +26,7 @@ def get_combis(elems):  # elems = deque(elems)
 
 
 class TreeCombi:
-    # TODO: change nb_assets to 40
+    # TODO: add father class
     def __init__(self, port, min_assets=15, max_assets=40,
                  lr=0.01, min_sharpe_change=0.05):
         # Data
@@ -88,13 +88,6 @@ class TreeCombi:
             self.bestcompo = s
 
     def __call__(self, start=-1, nb_assets=0, s=''):
-        """
-        TODO: we should handle index "rotations" in the start == -1 init loop,
-        to have full trees each time but keeping the
-        start > self.nb_assets condition
-        if start > self.nb_assets:  # We do not take more than nb_assets assets
-            return
-        """
         if nb_assets >= self.max_assets:  # We need the rot approach
             return
         if start != -1:  # Process element at start index
