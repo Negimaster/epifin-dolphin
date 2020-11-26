@@ -17,6 +17,9 @@ class TestPortfolio(unittest.TestCase):
             self.port = Portfolio("full.csv")
         else:
             self.port = Portfolio()
+        """
+        TODO: maybe the below code should be apart of the Portfolio class
+        """
         self.p = self.r.getPortfolio(self.port.portfolioid)
         # print(self.p)
         self.p = self.p['values']['2016-06-01']
@@ -28,7 +31,8 @@ class TestPortfolio(unittest.TestCase):
             self.port.dataframe.at[asset, "quantity"] = qty
         self.port.update_ttvalue()
         self.port.update_nav()
-        self.assertTrue(self.port.is_valid())
+        self.assertTrue(self.port.is_valid(),
+                        msg='Invalid retrieved portfolio !')
 
     def test_portfolio_sharpe(self):
         sharpe = self.port.get_sharpe()
