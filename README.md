@@ -37,6 +37,7 @@ python3 treecombi.py
 Launch ?n
 python3 treecombi.py
 Launch ?y
+Push ?n
 ```
 
 ## Network demo
