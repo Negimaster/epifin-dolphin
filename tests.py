@@ -7,34 +7,22 @@ import urllib3
 urllib3.disable_warnings()
 
 
-class TestPortfolio(unittest.TestCase):
+class TestPortfolioRetrieve(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.r = RestManager()
 
     def setUp(self):
         if os.path.isfile("full.csv"):
-            self.port = Portfolio("full.csv")
+            self.port = Portfolio("full.csv", retrieve=True)
         else:
-            self.port = Portfolio()
-        """
-        TODO: maybe the below code should be apart of the Portfolio class
-        """
-        self.p = self.r.getPortfolio(self.port.portfolioid)
-        # print(self.p)
-        self.p = self.p['values']['2016-06-01']
-        self.p = [[e['asset']['asset'], e['asset']['quantity']]
-                  for e in self.p]
+            self.port = Portfolio(retrieve=True)
 
     def test_portfolio_retrieve_valid(self):
-        for asset, qty in self.p:
-            self.port.dataframe.at[asset, "quantity"] = qty
-        self.port.update_ttvalue()
-        self.port.update_nav()
         self.assertTrue(self.port.is_valid(),
                         msg='Invalid retrieved portfolio !')
 
-    def test_portfolio_sharpe(self):
+    def test_portfolio_retrieve_sharpe(self):
         sharpe = self.port.get_sharpe()
         exp_sharpe = self.r.putRatio([12], [self.port.portfolioid], None,
                                      self.port.START_DATE, self.port.END_DATE, None)

@@ -7,10 +7,12 @@ from datetime import datetime
 from network import RestManager
 
 
-class Portfolio:
+class Portfolio(object):
 
-    def __init__(self, path=None, dataframe=None, restManager=RestManager(),
+    def __init__(self, path=None, dataframe=None, retrieve=False,
+                 restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None):
+        self.portfolioid = portfolioid
         self.r = restManager
         if not isinstance(self.r, RestManager):
             raise RuntimeError(
@@ -91,13 +93,29 @@ class Portfolio:
         for i in self.dataframe.index:
             self.cov[i] = None
 
+        self.__init_correlation()
+
+        if retrieve:
+            self.retrieve_portfolio()
+
         self.curs = {c: self.r.getConvRate(
             c) for c in self.dataframe["assetCurrency"].unique()}
         # print(self.dataframe)
         self.dataframe['assetValue'] *= self.dataframe['assetCurrency'].apply(
             lambda cur: self.curs[cur])
         self.dataframe['assetCurrency'] = "EUR"
-        self.portfolioid = 1824
+
+    def retrieve_portfolio(self):
+        date = self.START_DATE.split("T")[0]
+        p = self.r.getPortfolio(self.portfolioid)
+        p = p['values'][date]
+        p = [[e['asset']['asset'], e['asset']['quantity']]
+             for e in p]
+        for asset, qty in p:
+            self.dataframe.at[asset, "quantity"] = qty
+        self.update_ttvalue()
+        self.update_nav()
+        assert(self.is_valid())
 
     def get_dataframe(self):
         return self.dataframe
@@ -132,7 +150,7 @@ class Portfolio:
         return self.cov
 
     # Fills in correlation matrix but takes 3 minutes
-    def init_correlation(self):
+    def __init_correlation(self):
         if os.path.isfile("cov.npy"):
             return self.load_cov()
         for nbi, i in enumerate(self.dataframe.index):

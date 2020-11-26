@@ -223,13 +223,13 @@ if __name__ == "__main__":
     r = RestManager()
     if os.path.isfile("full.csv"):
         p = Portfolio(path="full.csv", restManager=r)
-        print(p.init_correlation())
+        # print(p.init_correlation())
     else:
         p = Portfolio(restManager=r)
         df = p.dataframe.copy().sort_values(
             by=['sharpe'], ascending=False)
         p = Portfolio(dataframe=df, restManager=r)
-        print(p.init_correlation())
+        # print(p.init_correlation())
         p.dump_portfolio()
     print(p.dataframe.columns)
     print(p.dataframe)
