@@ -10,6 +10,7 @@ from network import RestManager
 class Portfolio(object):
 
     def __init__(self, path=None, dataframe=None, retrieve=False,
+                 init_cor=True,
                  restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None):
         self.portfolioid = portfolioid
@@ -93,7 +94,8 @@ class Portfolio(object):
         for i in self.dataframe.index:
             self.cov[i] = None
 
-        self.__init_correlation()
+        if init_cor:
+            self.__init_correlation()
 
         if retrieve:
             self.retrieve_portfolio()
