@@ -306,6 +306,19 @@ class Portfolio(object):
         assert(self.is_valid(True))
         return self.dataframe['quantity']
 
+    def has_types(self, types=['PORTFOLIO', 'INDEX']):
+        """wether any assets with positive quantity
+        in the portfolio are the following types
+
+        Args:
+            types (list, optional): [list of types to check].
+            Defaults to ['PORTFOLIO', 'INDEX'].
+
+        Returns:
+            [bool]: [wether the portfolio has the following types]
+        """
+        return self.dataframe[self.dataframe['quantity'] > 0].assetType.isin(types).any()
+
     def is_valid(self, print_values=False):
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40

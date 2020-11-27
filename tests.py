@@ -21,6 +21,7 @@ class TestPortfolioRetrieve(unittest.TestCase):
     def test_portfolio_retrieve_valid(self):
         self.assertTrue(self.port.is_valid(),
                         msg='Invalid retrieved portfolio !')
+        self.assertFalse(self.port.has_types())
 
     def test_portfolio_retrieve_sharpe(self):
         sharpe = self.port.get_sharpe()
