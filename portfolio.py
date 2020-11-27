@@ -14,7 +14,8 @@ class Portfolio(object):
                  restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None,
                  total_budget=1e10,
-                 allowed_products=[], ignored_products=['PORTFOLIO']):  # 'STOCK'
+                 allowed_products=[], ignored_products=['PORTFOLIO', 'INDEX']):
+        # 'STOCK'
         # other product types : 'PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND'
         if len(allowed_products) > 0:
             assert('PORTFOLIO' not in allowed_products)
