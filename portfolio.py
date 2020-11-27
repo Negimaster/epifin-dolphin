@@ -7,10 +7,25 @@ from datetime import datetime
 from network import RestManager
 
 
-class Portfolio:
+class Portfolio(object):
 
-    def __init__(self, path=None, dataframe=None, restManager=RestManager(),
-                 START_DATE=None, END_DATE=None):
+    def __init__(self, path=None, dataframe=None, retrieve=False,
+                 init_cor=True,
+                 restManager=RestManager(), portfolioid=1824,
+                 START_DATE=None, END_DATE=None,
+                 total_budget=1e10,
+                 allowed_products=[], ignored_products=['PORTFOLIO', 'INDEX']):
+        # 'STOCK'
+        # other product types : 'PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND'
+        if len(allowed_products) > 0:
+            assert('PORTFOLIO' not in allowed_products)
+        if len(ignored_products) > 0:
+            assert('PORTFOLIO' in ignored_products)
+        if len(ignored_products) == 0 and len(allowed_products) == 0:
+            raise RuntimeError(
+                "Invalid configuration for assetType filtering !")
+        self.portfolioid = portfolioid
+        self.total_budget = total_budget
         self.r = restManager
         if not isinstance(self.r, RestManager):
             raise RuntimeError(
@@ -86,10 +101,26 @@ class Portfolio:
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
         self.dataframe.dropna(inplace=True)
+        if len(ignored_products) > 0 and len(allowed_products) == 0:
+            self.dataframe = self.dataframe[~self.dataframe.assetType.isin(
+                ignored_products)]
+        elif len(allowed_products) > 0 and len(ignored_products) == 0:
+            self.dataframe = self.dataframe[self.dataframe.assetType.isin(
+                allowed_products)]
+        elif len(ignored_products) > 0 and len(ignored_products) > 0:
+            self.dataframe = self.dataframe[(self.dataframe.assetType.isin(
+                allowed_products)) & ~(self.dataframe.assetType.isin(
+                    ignored_products))]
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
             self.cov[i] = None
+
+        if init_cor:
+            self.__init_correlation()
+
+        if retrieve:
+            self.retrieve_portfolio()
 
         self.curs = {c: self.r.getConvRate(
             c) for c in self.dataframe["assetCurrency"].unique()}
@@ -97,7 +128,53 @@ class Portfolio:
         self.dataframe['assetValue'] *= self.dataframe['assetCurrency'].apply(
             lambda cur: self.curs[cur])
         self.dataframe['assetCurrency'] = "EUR"
-        self.portfolioid = 1824
+        assert(not self.dataframe.isnull().values.any())
+
+    def __init_correlation(self):
+        """
+        Fills in correlation matrix but takes 3 minutes
+        """
+        if os.path.isfile("cov.npy"):
+            return self.load_cov()
+        for nbi, i in enumerate(self.dataframe.index):
+            correlationResp = self.r.putRatio(
+                [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
+            l = []  # np.array(len(correlationResp))
+            for j in self.dataframe.index:
+                j = str(j)
+                if correlationResp[j]['11']['type'] == 'double':
+                    l.append(float(
+                        correlationResp[j]['11']['value'].replace(',', '.')))
+                else:
+                    l.append(float("nan"))
+            self.cov.loc[i] = l
+            self.cov[i] = l
+            print(
+                f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
+        # print(self.cov)
+        toremove = self.cov.isnull().all(axis=1)
+        toremove = [i for i in toremove.index if toremove.loc[i]]
+        self.dataframe.drop(toremove, inplace=True)
+        self.cov.dropna(axis=0, how="all", inplace=True)
+        self.cov.dropna(axis=1, how="all", inplace=True)
+        # print(self.cov)
+        # print(self.dataframe)
+        assert(not self.cov.isnull().values.any())
+        if not os.path.isfile("cov.npy"):
+            self.dump_cov()
+        return self.cov
+
+    def retrieve_portfolio(self):
+        date = self.START_DATE.split("T")[0]
+        p = self.r.getPortfolio(self.portfolioid)
+        p = p['values'][date]
+        p = [[e['asset']['asset'], e['asset']['quantity']]
+             for e in p]
+        for asset, qty in p:
+            self.dataframe.at[asset, "quantity"] = qty
+        self.update_ttvalue()
+        self.update_nav()
+        assert(self.is_valid())
 
     def get_dataframe(self):
         return self.dataframe
@@ -129,38 +206,6 @@ class Portfolio:
         return self.dataframe
 
     def print_cov(self):
-        return self.cov
-
-    # Fills in correlation matrix but takes 3 minutes
-    def init_correlation(self):
-        if os.path.isfile("cov.npy"):
-            return self.load_cov()
-        for nbi, i in enumerate(self.dataframe.index):
-            correlationResp = self.r.putRatio(
-                [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
-            l = []  # np.array(len(correlationResp))
-            for j in self.dataframe.index:
-                j = str(j)
-                if correlationResp[j]['11']['type'] == 'double':
-                    l.append(float(
-                        correlationResp[j]['11']['value'].replace(',', '.')))
-                else:
-                    l.append(float("nan"))
-            self.cov.loc[i] = l
-            self.cov[i] = l
-            print(
-                f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
-        # print(self.cov)
-        toremove = self.cov.isnull().all(axis=1)
-        toremove = [i for i in toremove.index if toremove.loc[i]]
-        self.dataframe.drop(toremove, inplace=True)
-        self.cov.dropna(axis=0, how="all", inplace=True)
-        self.cov.dropna(axis=1, how="all", inplace=True)
-        # print(self.cov)
-        # print(self.dataframe)
-        assert(not self.cov.isnull().values.any())
-        if not os.path.isfile("cov.npy"):
-            self.dump_cov()
         return self.cov
 
     def get_covariance_unused(self, i, j):
@@ -249,10 +294,9 @@ class Portfolio:
     def build_quantities(self):
         # print(self.dataframe.isnull().values.sum())
         assert(not self.dataframe.isnull().values.any())
-        total_budget = 1e10
         price_by_asset = self.dataframe['assetValue']
-        budget_by_asset = self.dataframe['NAVPercentage'] * total_budget
-        quantity_by_asset = np.ceil(budget_by_asset / price_by_asset)
+        budget_by_asset = self.dataframe['NAVPercentage'] * self.total_budget
+        quantity_by_asset = np.floor(budget_by_asset / price_by_asset)
         self.dataframe['quantity'] = quantity_by_asset
         self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
         assert(not self.dataframe['quantity'].isnull().any() and
@@ -290,10 +334,14 @@ class Portfolio:
 
     def push(self):
         date = self.START_DATE.split("T")[0]
-        input(date)
-        r = self.r.putPortfolio(self.portfolioid, 'EPITA_PTF_5',
-                                {'code': 'EUR'}, 'front', {date: self.to_json()})
-        print(r.text, r.status_code)
+        if self.r.checkpassword():
+            r = self.r.putPortfolio(self.portfolioid, 'EPITA_PTF_5',
+                                    {'code': 'EUR'}, 'front', {date: self.to_json()})
+            assert(r.status_code == 200)
+            print("Successfully Pushed !")
+            # print(r.text, r.status_code)
+        else:
+            print("Invalid Password !")
 
     def to_json(self):
         dic = [{'asset': {'asset': assetid, 'quantity': quantity}}
@@ -309,6 +357,7 @@ if __name__ == "__main__":
     print(p.get_sharpe())
     print(p.get_dataframe())
     print(p.is_valid())
+    print(p.dataframe.assetType.unique())
     # print(p.dataframe["assetCurrency"].unique())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])
