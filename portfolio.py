@@ -281,7 +281,7 @@ class Portfolio(object):
         assert(not self.dataframe.isnull().values.any())
         price_by_asset = self.dataframe['assetValue']
         budget_by_asset = self.dataframe['NAVPercentage'] * self.total_budget
-        quantity_by_asset = np.ceil(budget_by_asset / price_by_asset)
+        quantity_by_asset = np.around(budget_by_asset / price_by_asset)
         self.dataframe['quantity'] = quantity_by_asset
         self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
         assert(not self.dataframe['quantity'].isnull().any() and
