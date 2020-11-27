@@ -306,6 +306,19 @@ class Portfolio(object):
         assert(self.is_valid(True))
         return self.dataframe['quantity']
 
+    def has_types(self, types=['PORTFOLIO', 'INDEX']):
+        """wether any assets with positive quantity
+        in the portfolio are the following types
+
+        Args:
+            types (list, optional): list of types to check.
+            Defaults to ['PORTFOLIO', 'INDEX'].
+
+        Returns:
+            bool: wether the portfolio has the following types
+        """
+        return self.dataframe[self.dataframe['quantity'] > 0].assetType.isin(types).any()
+
     def is_valid(self, print_values=False):
         nb_different_assets = (self.dataframe['NAVPercentage'] != 0.0).sum()
         valid_nb_different_assets = 15 <= nb_different_assets and nb_different_assets <= 40
@@ -330,7 +343,7 @@ class Portfolio(object):
         if print_values and not valid_navs:
             print(f'valid_navs: {valid_navs}')
             print(non_zero_navs)
-        return valid_nb_different_assets and at_least_half_actions and valid_navs
+        return valid_nb_different_assets and at_least_half_actions and valid_navs and not self.has_types()
 
     def push(self):
         date = self.START_DATE.split("T")[0]
@@ -344,6 +357,11 @@ class Portfolio(object):
             print("Invalid Password !")
 
     def to_json(self):
+        """dumps positive quantity portfolio to list of dicts
+
+        Returns:
+            list(dict): list of asset dicos
+        """
         dic = [{'asset': {'asset': assetid, 'quantity': quantity}}
                for assetid, quantity in
                zip(self.dataframe.index, self.dataframe.quantity)
@@ -353,11 +371,13 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     r = RestManager()
-    p = Portfolio(restManager=r)
+    p = Portfolio(restManager=r, retrieve=True)
     print(p.get_sharpe())
     print(p.get_dataframe())
     print(p.is_valid())
     print(p.dataframe.assetType.unique())
+    print(p.dataframe[p.dataframe['quantity'] > 0].assetType)
+    print(p.to_json())
     # print(p.dataframe["assetCurrency"].unique())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])
