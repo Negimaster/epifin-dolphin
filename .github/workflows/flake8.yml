@@ -11,5 +11,5 @@ jobs:
       - uses: TrueBrain/actions-flake8@master
         with:
           only_warn: 1
-          ignore: E501,W
-          #max_line_length: 90
+          max_line_length: 90
+          #ignore: E501,W
