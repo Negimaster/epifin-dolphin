@@ -27,7 +27,7 @@ load_dotenv()
 urllib3.disable_warnings()
 
 
-class NetworkManager():
+class NetworkManager(object):
     '''
     Low level network manager class; python requests module wrapper
     '''
@@ -56,7 +56,7 @@ class NetworkManager():
         self.session.auth = (self.__USERNAME, self.__PASSWORD)
         self.session.verify = False
 
-    def __call__(self, endpoint, params):
+    def get(self, endpoint, params):
         url = urljoin(self.URL, endpoint)
         req = self.session.get(url, params=params)
         req.raise_for_status()
@@ -107,31 +107,31 @@ class RestManager(NetworkManager):
         params = {'date': parDate, 'columns': columns}
         if fullResponse:
             params['fullResponse'] = fullResponse
-        resp = self('asset', params=params)
+        resp = self.get('asset', params=params)
         return resp.json()
 
     def getAsset(self, parId, parDate, columns=['ASSET_DATABASE_ID', 'LABEL', 'LAST_CLOSE_VALUE_IN_CURR', 'TYPE', 'CURRENCY'], fullResponse=False):
         params = {'date': parDate, 'columns': columns}
         if fullResponse:
             params['fullResponse'] = fullResponse
-        resp = self(f'asset/{parId}', params=params)
+        resp = self.get(f'asset/{parId}', params=params)
         return resp.json()
 
     def getAssetAttr(self, parId, parAttr, parDate, fullResponse=False):
         params = {'date': parDate}
         if fullResponse:
             params['fullResponse'] = fullResponse
-        resp = self(f'asset/{parId}/attribute/{parAttr}', params=params)
+        resp = self.get(f'asset/{parId}/attribute/{parAttr}', params=params)
         return resp.json()
 
     def getQuote(self, parId, parStartDate, parEndDate):
         params = {'start_date': parStartDate, 'end_date': parEndDate}
-        resp = self(f'asset/{parId}/quote', params=params)
+        resp = self.get(f'asset/{parId}/quote', params=params)
         return resp.json()
 
     def getPortfolio(self, parId):
         params = []
-        resp = self(f'portfolio/{parId}/dyn_amount_compo', params=params)
+        resp = self.get(f'portfolio/{parId}/dyn_amount_compo', params=params)
         return resp.json()
 
     def putPortfolio(self, parId, portfolioLabel, currency, amount_type, values):
@@ -146,7 +146,7 @@ class RestManager(NetworkManager):
 
     def getRatio(self):
         params = []
-        resp = self('ratio', params=params)
+        resp = self.get('ratio', params=params)
         return resp.json()
 
     def putRatio(self, ratio, asset, benchmark, start_date, end_date, frequency, fullResponse=False):
@@ -164,7 +164,7 @@ class RestManager(NetworkManager):
 
     def getConvRate(self, currency_src, currency_dest="EUR"):
         req = f'currency/rate/{currency_src}/to/{currency_dest}'
-        resp = self(req, params=[])
+        resp = self.get(req, params=[])
         return float(resp.json()["rate"]["value"].replace(",", "."))
 
 
