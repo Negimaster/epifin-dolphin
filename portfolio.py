@@ -139,16 +139,16 @@ class Portfolio(object):
         for nbi, i in enumerate(self.dataframe.index):
             correlationResp = self.r.putRatio(
                 [11], self.get_index(), i, self.START_DATE, self.END_DATE, None)
-            l = []  # np.array(len(correlationResp))
+            corrlist = []
             for j in self.dataframe.index:
                 j = str(j)
                 if correlationResp[j]['11']['type'] == 'double':
-                    l.append(float(
+                    corrlist.append(float(
                         correlationResp[j]['11']['value'].replace(',', '.')))
                 else:
-                    l.append(float("nan"))
-            self.cov.loc[i] = l
-            self.cov[i] = l
+                    corrlist.append(float("nan"))
+            self.cov.loc[i] = corrlist
+            self.cov[i] = corrlist
             print(
                 f"Loading correlations: {nbi} / {len(self.dataframe.index)}", end="\r")
         # print(self.cov)
@@ -200,8 +200,8 @@ class Portfolio(object):
         quantity = self.dataframe.loc[id, 'quantity']
         self.dataframe.loc[id, 'quantity'] += n if n + \
             quantity >= 0 or n > 0 else 0
-        self.dataframe.loc[id, 'totalValue'] = self.dataframe.loc[id,
-                                                                  'assetValue'] * self.dataframe.loc[id, 'quantity']
+        self.dataframe.loc[id, 'totalValue'] = self.dataframe.loc[id, 'assetValue'] *\
+            self.dataframe.loc[id, 'quantity']
         self.update_nav()
         return self.dataframe
 

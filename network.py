@@ -1,9 +1,6 @@
 from requests import Session
 from requests.compat import urljoin
-import requests
-from base64 import b64encode
 import urllib3
-from datetime import datetime
 import pandas as pd
 import warnings
 
