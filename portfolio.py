@@ -311,11 +311,11 @@ class Portfolio(object):
         in the portfolio are the following types
 
         Args:
-            types (list, optional): [list of types to check].
+            types (list, optional): list of types to check.
             Defaults to ['PORTFOLIO', 'INDEX'].
 
         Returns:
-            [bool]: [wether the portfolio has the following types]
+            bool: wether the portfolio has the following types
         """
         return self.dataframe[self.dataframe['quantity'] > 0].assetType.isin(types).any()
 
@@ -343,7 +343,7 @@ class Portfolio(object):
         if print_values and not valid_navs:
             print(f'valid_navs: {valid_navs}')
             print(non_zero_navs)
-        return valid_nb_different_assets and at_least_half_actions and valid_navs
+        return valid_nb_different_assets and at_least_half_actions and valid_navs and not self.has_types()
 
     def push(self):
         date = self.START_DATE.split("T")[0]
