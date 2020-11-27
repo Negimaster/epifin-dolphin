@@ -357,6 +357,11 @@ class Portfolio(object):
             print("Invalid Password !")
 
     def to_json(self):
+        """dumps positive quantity portfolio to list of dicts
+
+        Returns:
+            list(dict): list of asset dicos
+        """
         dic = [{'asset': {'asset': assetid, 'quantity': quantity}}
                for assetid, quantity in
                zip(self.dataframe.index, self.dataframe.quantity)
@@ -366,11 +371,13 @@ class Portfolio(object):
 
 if __name__ == "__main__":
     r = RestManager()
-    p = Portfolio(restManager=r)
+    p = Portfolio(restManager=r, retrieve=True)
     print(p.get_sharpe())
     print(p.get_dataframe())
     print(p.is_valid())
     print(p.dataframe.assetType.unique())
+    print(p.dataframe[p.dataframe['quantity'] > 0].assetType)
+    print(p.to_json())
     # print(p.dataframe["assetCurrency"].unique())
     # test = p.get_dataframe().sort_values(by=['sharpe'], ascending=False)
     # print(test[test.assetType == 'PORTFOLIO'])
