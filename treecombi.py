@@ -1,10 +1,7 @@
-from string import ascii_uppercase as ASCIIUP
 import time
 import os
 import random
 import math
-import pandas as pd
-import numpy as np
 from copy import deepcopy as dc
 from network import RestManager
 from portfolio import Portfolio
