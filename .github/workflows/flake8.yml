@@ -1,0 +1,15 @@
+name: Flake8 Lint checker
+
+on: [push]
+#pull_request
+
+lint_warnings:
+    name: lint warnings
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: TrueBrain/actions-flake8@master
+      with:
+        only_warn: 1
+        ignore: E501,W
+        #max_line_length: 90
