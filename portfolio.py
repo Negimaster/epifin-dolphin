@@ -14,9 +14,15 @@ class Portfolio(object):
                  restManager=RestManager(), portfolioid=1824,
                  START_DATE=None, END_DATE=None,
                  total_budget=1e10,
-                 allowed_products=['STOCK']):
+                 allowed_products=[], ignored_products=['PORTFOLIO']):  # 'STOCK'
         # other product types : 'PORTFOLIO', 'FUND', 'INDEX', 'ETF FUND'
-        assert('PORTFOLIO' not in allowed_products)
+        if len(allowed_products) > 0:
+            assert('PORTFOLIO' not in allowed_products)
+        if len(ignored_products) > 0:
+            assert('PORTFOLIO' in ignored_products)
+        if len(ignored_products) == 0 and len(allowed_products) == 0:
+            raise RuntimeError(
+                "Invalid configuration for assetType filtering !")
         self.portfolioid = portfolioid
         self.total_budget = total_budget
         self.r = restManager
@@ -94,8 +100,16 @@ class Portfolio(object):
         self.dataframe = self.dataframe.astype(
             {'totalValue': 'float64', 'NAVPercentage': 'float64', 'quantity': 'uint64'})
         self.dataframe.dropna(inplace=True)
-        self.dataframe = self.dataframe[self.dataframe.assetType.isin(
-            allowed_products)]
+        if len(ignored_products) > 0 and len(allowed_products) == 0:
+            self.dataframe = self.dataframe[~self.dataframe.assetType.isin(
+                ignored_products)]
+        elif len(allowed_products) > 0 and len(ignored_products) == 0:
+            self.dataframe = self.dataframe[self.dataframe.assetType.isin(
+                allowed_products)]
+        elif len(ignored_products) > 0 and len(ignored_products) > 0:
+            self.dataframe = self.dataframe[(self.dataframe.assetType.isin(
+                allowed_products)) & ~(self.dataframe.assetType.isin(
+                    ignored_products))]
 
         self.cov = pd.DataFrame(index=self.dataframe.index)
         for i in self.dataframe.index:
@@ -281,7 +295,7 @@ class Portfolio(object):
         assert(not self.dataframe.isnull().values.any())
         price_by_asset = self.dataframe['assetValue']
         budget_by_asset = self.dataframe['NAVPercentage'] * self.total_budget
-        quantity_by_asset = np.around(budget_by_asset / price_by_asset)
+        quantity_by_asset = np.floor(budget_by_asset / price_by_asset)
         self.dataframe['quantity'] = quantity_by_asset
         self.dataframe = self.dataframe.astype({'quantity': 'uint64'})
         assert(not self.dataframe['quantity'].isnull().any() and
